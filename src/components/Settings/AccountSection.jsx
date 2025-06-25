@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Edit, Trash2, Eye, X, User, Mail, Shield, Clock  } from 'lucide-react';
+const baseURL = import.meta.env.VITE_API_URL;
 
 
 const AccountSection = () => {
@@ -14,7 +15,7 @@ const AccountSection = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/users')
+    fetch(`${baseURL}/api/users`)
       .then(res => res.json())
       .then(data => setUsers(data.users))
       .catch(err => console.error('Gagal memuat data pengguna:', err));
@@ -46,7 +47,7 @@ const AccountSection = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/users/register`, {
+      const res = await fetch(`${baseURL}/api/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password: newPassword, role: assignedRole })
@@ -55,7 +56,7 @@ const AccountSection = () => {
       if (res.ok) {
         showMessage('Akun berhasil ditambahkan');
         resetForm();
-        const updated = await fetch('http://localhost:5000/api/users').then(r => r.json());
+        const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
         setUsers(updated.users);
       } else {
         const err = await res.json();
@@ -70,7 +71,7 @@ const AccountSection = () => {
   if (!name || !email || !assignedRole) return alert('Lengkapi semua data');
 
   try {
-    const res = await fetch(`http://localhost:5000/api/users/${editingUserId}`, {
+    const res = await fetch(`${baseURL}/api/users/${editingUserId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password: newPassword, role: assignedRole }),
@@ -79,7 +80,7 @@ const AccountSection = () => {
     if (res.ok) {
       alert('Berhasil Edit Akun');
       resetForm(); // clear state
-      const updated = await fetch('http://localhost:5000/api/users').then(r => r.json());
+      const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
       setUsers(updated.users);
     } else {
       const err = await res.json();
@@ -96,7 +97,7 @@ const AccountSection = () => {
     if (!confirmed) return;
 
     try {
-      await fetch(`http://localhost:5000/api/users/${userId}`, {
+      await fetch(`${baseURL}/api/users/${userId}`, {
         method: 'DELETE'
       });
       setUsers(users.filter(user => user.id !== userId));

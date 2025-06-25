@@ -1,6 +1,8 @@
 // src/components/AddProductModal.jsx
 import React, { useState, useEffect } from 'react';
 
+const baseURL = import.meta.env.VITE_API_URL;
+
 const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mode }) => {
   const [form, setForm] = useState({
     name: '',
@@ -61,8 +63,8 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
   try {
     const isEdit = mode === 'edit';
     const url = isEdit
-      ? `http://localhost:5000/api/products/${selectedProduct.id}`
-      : `http://localhost:5000/api/products`;
+      ? `${baseURL}/api/products/${selectedProduct.id}`
+      : `${baseURL}/api/products`;
 
     const method = isEdit ? 'PUT' : 'POST';
 

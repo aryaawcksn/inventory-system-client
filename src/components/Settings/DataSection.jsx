@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 
+const baseURL = import.meta.env.VITE_API_URL;
+
 const DataSection = () => {
   const [file, setFile] = useState(null);
 
   const handleExport = () => {
-    window.open('http://localhost:5000/api/sales/export', '_blank');
+    window.open(`${baseURL}/api/sales/export`, '_blank');
   };
 
   const handleFileChange = (e) => {
@@ -18,7 +20,7 @@ const DataSection = () => {
     formData.append('file', file);
 
     try {
-      const res = await fetch('http://localhost:5000/api/sales/import', {
+      const res = await fetch(`${baseURL}/api/sales/import`, {
         method: 'POST',
         body: formData,
       });
@@ -41,7 +43,7 @@ const DataSection = () => {
     if (!confirmed) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/sales/reset', {
+      const res = await fetch(`${baseURL}/api/sales/reset`, {
         method: 'DELETE',
       });
 

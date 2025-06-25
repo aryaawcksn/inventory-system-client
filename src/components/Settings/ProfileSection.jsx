@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
+
+const baseURL = import.meta.env.VITE_API_URL;
+
+
 const ProfileSection = () => {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +21,7 @@ const ProfileSection = () => {
 
   const handleSave = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/users/update-profile', {
+      const res = await fetch(`${baseURL}/api/users/update-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

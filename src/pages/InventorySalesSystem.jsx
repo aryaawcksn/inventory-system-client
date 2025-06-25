@@ -11,6 +11,10 @@ import SaleFormModal from '../components/SaleFormModal';
 import Settings from '../components/Settings/Settings';
 import AccessDenied from '../components/AccessDenied'; // ✅ Tambahkan ini
 
+
+const baseURL = import.meta.env.VITE_API_URL;
+
+
 const InventorySalesSystem = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,8 +42,8 @@ const InventorySalesSystem = () => {
       setIsLoading(true);
       try {
         const [productsRes, salesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/products'),
-          fetch('http://localhost:5000/api/sales'),
+          fetch(`${baseURL}/api/products`),
+          fetch(`${baseURL}/api/sales`),
         ]);
 
         const productsData = await productsRes.json();

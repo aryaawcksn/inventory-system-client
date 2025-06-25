@@ -10,6 +10,8 @@ import {
   LogOut
 } from 'lucide-react';
 
+const baseURL = import.meta.env.VITE_API_URL;
+
 const Sidebar = ({ userImage }) => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ const Sidebar = ({ userImage }) => {
 
   if (user?.email) {
     try {
-      await fetch('http://localhost:5000/api/users/logout', {
+      await fetch(`${baseURL}/api/users/logout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email })

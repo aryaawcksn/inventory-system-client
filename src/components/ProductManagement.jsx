@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Eye, Edit, Trash2, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import AddProductModal from './AddProductModal';
 
+const baseURL = import.meta.env.VITE_API_URL;
+
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,7 +18,7 @@ const ProductManagement = () => {
   // 🔁 Ambil data dari API
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/products');
+      const res = await fetch(`${baseURL}/api/products`);
       const data = await res.json();
       setProducts(data.products);
     } catch (err) {
@@ -84,7 +86,7 @@ const ProductManagement = () => {
     if (!confirm) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+      const res = await fetch(`${baseURL}/api/products/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

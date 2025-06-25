@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 
+
+const baseURL = import.meta.env.VITE_API_URL;
+
+
 const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -70,7 +74,7 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/sales', {
+      const res = await fetch(`${baseURL}/api/sales`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
