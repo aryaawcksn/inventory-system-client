@@ -1,4 +1,4 @@
-const API = 'http://localhost:5000/api/barang';
+const API = `${baseURL}/api/barang`;
 
 export const getAllBarang = async () => {
   const res = await fetch(API);
