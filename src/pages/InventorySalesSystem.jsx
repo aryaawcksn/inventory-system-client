@@ -80,7 +80,7 @@ const InventorySalesSystem = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/products');
+      const res = await fetch(`${baseURL}/api/products`);
       const data = await res.json();
       if (res.ok) {
         setProducts(data.products);
@@ -92,7 +92,7 @@ const InventorySalesSystem = () => {
 
   const fetchSales = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/sales');
+      const res = await fetch(`${baseURL}/api/sales`);
       const data = await res.json();
       setSales(data.sales);
     } catch (err) {
