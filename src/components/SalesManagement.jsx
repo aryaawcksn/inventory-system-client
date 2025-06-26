@@ -118,7 +118,6 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
               {sales.map((sale) => (
                 <tr key={sale.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{formatDate(sale.date)}</td>
-                  <td className="px-6 py-4">{sale.customer}</td>
                   <td className="px-6 py-4">{sale.items}</td>
                   <td className="px-6 py-4">{sale.qty}</td>
                   <td className="px-6 py-4 font-medium">{formatCurrency(sale.total)}</td>
