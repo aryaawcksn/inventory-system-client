@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 
-
 const baseURL = import.meta.env.VITE_API_URL;
-
 
 const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
   const [selectedProductId, setSelectedProductId] = useState(null);
@@ -17,16 +15,16 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
     status: 'completed'
   });
 
-const productOptions = products.map(p => ({
-  value: p._id, // ✅ Ganti jadi _id
-  label: `${p.name} - Rp${Number(p.price).toLocaleString('id-ID')}`,
-}));
+  const productOptions = products.map(p => ({
+    value: p._id,
+    label: `${p.name} - Rp${Number(p.price).toLocaleString('id-ID')}`,
+  }));
 
   const selectedOption = productOptions.find(opt => opt.value === selectedProductId);
 
   useEffect(() => {
     if (selectedProductId) {
-      const product = products.find(p => p._id === selectedProductId); // ✅ Jangan parseInt
+      const product = products.find(p => p._id === selectedProductId);
       setSelectedProduct(product);
       const price = product?.price || 0;
       const qty = parseInt(form.qty) || 1;
@@ -64,13 +62,12 @@ const productOptions = products.map(p => ({
 
     const newSale = {
       date: form.date,
-      productId: selectedProduct._id, // ✅ pakai _id
+      productId: selectedProduct._id,
       items: selectedProduct.name,
       qty: parseInt(form.qty),
       total: form.total,
       status: form.status
     };
-
 
     try {
       const res = await fetch(`${baseURL}/api/sales`, {
@@ -82,10 +79,27 @@ const productOptions = products.map(p => ({
       });
 
       const data = await res.json();
+
       if (res.ok) {
         alert('✅ Transaksi berhasil disimpan');
-        onSubmit(); // ⬅️ Refresh data
+        onSubmit();
         setShowSaleForm(false);
+
+        // ✅ Catat log aktivitas
+        const user = JSON.parse(localStorage.getItem('user'));
+        await fetch(`${baseURL}/api/activity`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user': localStorage.getItem('user') // ✅ harus dikirim
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            name: user.name,
+            role: user.role,
+            action: `Menambahkan transaksi: ${form.qty} x ${selectedProduct.name}`
+          })
+        });
       } else {
         alert('❌ Gagal menyimpan transaksi: ' + data.message);
       }
@@ -101,14 +115,11 @@ const productOptions = products.map(p => ({
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Tambah Transaksi Baru</h2>
 
         <div className="flex items-start bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded mb-4">
-          <svg
-            className="w-5 h-5 mt-0.5 mr-2 flex-shrink-0 text-yellow-500"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M4.93 4.93a10 10 0 0114.14 0M12 12a10 10 0 100 0z" />
+          <svg className="w-5 h-5 mt-0.5 mr-2 flex-shrink-0 text-yellow-500"
+            xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 9v2m0 4h.01M4.93 4.93a10 10 0 0114.14 0M12 12a10 10 0 100 0z" />
           </svg>
           <p className="text-sm">
             <strong>Perhatian:</strong> Transaksi bersifat <span className="text-red-600 font-semibold">final</span>, harap masukkan dengan bijak.
@@ -123,6 +134,7 @@ const productOptions = products.map(p => ({
             onChange={handleChange}
             className="w-full border p-2 rounded"
           />
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Produk</label>
             <Select

@@ -10,6 +10,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
     stock: '',
     price: '',
     status: 'active',
+    category: ''
   });
 
   const [message, setMessage] = useState('');
@@ -67,10 +68,15 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
 
     const method = isEdit ? 'PUT' : 'POST';
 
+    const user = JSON.parse(localStorage.getItem('user')); // ✅ simpan dulu
+
     const res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user': JSON.stringify(user) // ✅ harus berupa string
+      },
+      body: JSON.stringify(form),
     });
 
     const data = await res.json();
@@ -78,9 +84,24 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
     if (res.ok) {
       setSuccessMessage(data.message || (isEdit ? 'Produk berhasil diperbarui!' : 'Produk berhasil ditambahkan!'));
 
-      fetchProducts(); // refresh data
+      // ✅ Tambah log aktivitas
+      await fetch(`${baseURL}/api/activity`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          name: user.name,
+          role: user.role,
+          action: isEdit
+            ? `Mengedit produk "${form.name}"`
+            : `Menambahkan produk "${form.name}"`
+        }),
+      });
 
-      setShowAddProduct(false); // ✅ tutup modal
+      fetchProducts();
+      setShowAddProduct(false);
 
       if (!isEdit) {
         setForm({
@@ -99,10 +120,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
     console.error('Gagal simpan produk:', error);
     setMessage('Terjadi kesalahan saat menghubungi server.');
   }
-}; // ✅ TUTUP handleSubmit di sini
-
-// ⬇️ setelah ini baru mulai return UI
-
+};
 
 
   return (
@@ -116,7 +134,6 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
             : 'Tambah Produk Baru'}
         </h2>
 
-        {/* Pesan */}
         {successMessage && (
           <p className="text-sm text-green-600 mb-2">{successMessage}</p>
         )}
@@ -134,6 +151,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
             readOnly={isReadOnly}
             className="w-full p-2 border rounded bg-white"
           />
+
           <select
             name="category"
             value={form.category}
@@ -149,6 +167,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
             <option value="Pakaian">Pakaian</option>
             <option value="Lainnya">Lainnya</option>
           </select>
+
           <input
             type="text"
             name="sku"
