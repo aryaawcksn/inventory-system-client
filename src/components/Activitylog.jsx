@@ -1,8 +1,10 @@
+// src/components/Activitylog.jsx
 import React, { useEffect, useState } from 'react';
-import BASE_URL from '../services/config';
+import BASE_URL from '../services/config'; // pastikan file ini ada dan export string URL
 
 const ActivityLog = () => {
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -10,27 +12,30 @@ const ActivityLog = () => {
         const res = await fetch(`${BASE_URL}/api/activity`);
         const data = await res.json();
         setLogs(data.logs || []);
-      } catch (err) {
-        console.error('❌ Gagal ambil log:', err);
+      } catch (error) {
+        console.error('❌ Gagal ambil log:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchLogs(); // 🔁 Panggil saat komponen mount
+    fetchLogs();
   }, []);
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Log Aktivitas</h2>
-      <ul className="space-y-2">
-        {logs.map((log, index) => (
-          <li key={index} className="p-2 bg-white rounded shadow text-sm">
-            <strong>{log.user?.name}</strong>: {log.action} —{' '}
-            <span className="text-gray-500">
-              {new Date(log.timestamp).toLocaleString()}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <h2 className="text-xl font-bold mb-4">Activity Log</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <ul className="space-y-2 text-sm text-gray-700">
+          {logs.map((log, index) => (
+            <li key={index} className="border-b py-2">
+              [{log.date}] {log.user} - {log.action}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
