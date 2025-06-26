@@ -17,16 +17,16 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
     status: 'completed'
   });
 
-  const productOptions = products.map(p => ({
-    value: p.id,
-    label: `${p.name} - Rp${Number(p.price).toLocaleString('id-ID')}`,
-  }));
+const productOptions = products.map(p => ({
+  value: p._id, // ✅ Ganti jadi _id
+  label: `${p.name} - Rp${Number(p.price).toLocaleString('id-ID')}`,
+}));
 
   const selectedOption = productOptions.find(opt => opt.value === selectedProductId);
 
   useEffect(() => {
     if (selectedProductId) {
-      const product = products.find(p => p.id === parseInt(selectedProductId));
+      const product = products.find(p => p._id === selectedProductId); // ✅ Jangan parseInt
       setSelectedProduct(product);
       const price = product?.price || 0;
       const qty = parseInt(form.qty) || 1;
@@ -64,12 +64,13 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
 
     const newSale = {
       date: form.date,
-      productId: selectedProduct.id,
+      productId: selectedProduct._id, // ✅ pakai _id
       items: selectedProduct.name,
       qty: parseInt(form.qty),
       total: form.total,
       status: form.status
     };
+
 
     try {
       const res = await fetch(`${baseURL}/api/sales`, {
