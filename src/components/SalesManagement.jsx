@@ -107,8 +107,6 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Tanggal</th>
-                <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Pelanggan</th>
-                <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Produk</th>
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Jumlah</th>
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Total</th>
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Status</th>

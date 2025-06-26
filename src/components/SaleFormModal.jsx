@@ -11,7 +11,6 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
 
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    customer: '',
     productId: '',
     qty: 1,
     total: 0,
@@ -48,7 +47,7 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.customer || !selectedProductId || !form.qty) {
+    if (!selectedProductId || !form.qty) {
       alert('Mohon lengkapi semua field');
       return;
     }
@@ -65,7 +64,6 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
 
     const newSale = {
       date: form.date,
-      customer: form.customer,
       productId: selectedProduct.id,
       items: selectedProduct.name,
       qty: parseInt(form.qty),
@@ -124,16 +122,6 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
             onChange={handleChange}
             className="w-full border p-2 rounded"
           />
-
-          <input
-            type="text"
-            name="customer"
-            placeholder="Nama Pelanggan"
-            value={form.customer}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          />
-
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Produk</label>
             <Select
