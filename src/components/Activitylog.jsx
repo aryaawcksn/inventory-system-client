@@ -1,6 +1,6 @@
 // src/components/Activitylog.jsx
 import React, { useEffect, useState } from 'react';
-import BASE_URL from '../services/config'; // pastikan file ini ada dan export string URL
+import BASE_URL from '../services/config'; // ✅ pastikan file ini ada dan path benar
 
 const ActivityLog = () => {
   const [logs, setLogs] = useState([]);
@@ -10,10 +10,13 @@ const ActivityLog = () => {
     const fetchLogs = async () => {
       try {
         const res = await fetch(`${BASE_URL}/api/activity`);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
         setLogs(data.logs || []);
-      } catch (error) {
-        console.error('❌ Gagal ambil log:', error);
+      } catch (err) {
+        console.error('❌ Gagal ambil log:', err);
       } finally {
         setLoading(false);
       }
@@ -23,18 +26,33 @@ const ActivityLog = () => {
   }, []);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Activity Log</h2>
+    <div className="bg-white shadow rounded p-6">
+      <h2 className="text-xl font-semibold mb-4">Log Aktivitas</h2>
       {loading ? (
         <p>Loading...</p>
+      ) : logs.length === 0 ? (
+        <p className="text-gray-500">Belum ada aktivitas.</p>
       ) : (
-        <ul className="space-y-2 text-sm text-gray-700">
-          {logs.map((log, index) => (
-            <li key={index} className="border-b py-2">
-              [{log.date}] {log.user} - {log.action}
-            </li>
-          ))}
-        </ul>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-100 text-left">
+              <th className="p-2">Nama</th>
+              <th className="p-2">Role</th>
+              <th className="p-2">Aksi</th>
+              <th className="p-2">Waktu</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((log) => (
+              <tr key={log._id || log.id} className="border-b">
+                <td className="p-2">{log.name}</td>
+                <td className="p-2 capitalize">{log.role}</td>
+                <td className="p-2">{log.action}</td>
+                <td className="p-2">{new Date(log.timestamp).toLocaleString('id-ID')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
