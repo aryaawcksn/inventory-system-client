@@ -10,7 +10,6 @@ const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('sku');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalMode, setModalMode] = useState('add');
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -41,10 +40,6 @@ const ProductManagement = () => {
   const sortedFilteredProducts = useMemo(() => {
     let filtered = products;
 
-    if (selectedCategory) {
-      filtered = filtered.filter(p => p.category === selectedCategory);
-    }
-
     if (searchTerm.trim()) {
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,7 +65,7 @@ const ProductManagement = () => {
     });
 
     return sorted;
-  }, [products, searchTerm, sortBy, sortOrder, selectedCategory]);
+  }, [products, searchTerm, sortBy, sortOrder]);
 
   const toggleSort = (key) => {
     if (sortBy === key) {
@@ -103,8 +98,6 @@ const ProductManagement = () => {
     }
   };
 
-  const uniqueCategories = [...new Set(products.map(p => p.category))];
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -135,18 +128,6 @@ const ProductManagement = () => {
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            <select
-              className="border rounded px-3 py-2"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">Semua Kategori</option>
-              {uniqueCategories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-
             <button
               onClick={() => toggleSort('sku')}
               className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
@@ -192,7 +173,6 @@ const ProductManagement = () => {
                       <div className="text-sm text-gray-500">SKU: {product.sku}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                   product.stock === 0
@@ -242,7 +222,7 @@ const ProductManagement = () => {
                       </button>
                       <button
                         className="text-red-600 hover:text-red-900"
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDelete(product._id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

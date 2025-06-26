@@ -6,7 +6,6 @@ const baseURL = import.meta.env.VITE_API_URL;
 const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mode }) => {
   const [form, setForm] = useState({
     name: '',
-    category: '',
     sku: '',
     stock: '',
     price: '',
@@ -63,7 +62,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
   try {
     const isEdit = mode === 'edit';
     const url = isEdit
-      ? `${baseURL}/api/products/${selectedProduct.id}`
+      ? `${baseURL}/api/products/${selectedProduct._id}`
       : `${baseURL}/api/products`;
 
     const method = isEdit ? 'PUT' : 'POST';
