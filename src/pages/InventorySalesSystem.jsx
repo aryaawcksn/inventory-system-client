@@ -1,4 +1,3 @@
-// src/pages/InventorySalesSystem.jsx
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -9,11 +8,10 @@ import Reports from '../components/Reports';
 import AddProductModal from '../components/AddProductModal';
 import SaleFormModal from '../components/SaleFormModal';
 import Settings from '../components/Settings/Settings';
-import AccessDenied from '../components/AccessDenied'; // ✅ Tambahkan ini
-
+import AccessDenied from '../components/AccessDenied';
+import ActivityLog from '../components/Activitylog'; // ✅ Import activity log
 
 const baseURL = import.meta.env.VITE_API_URL;
-
 
 const InventorySalesSystem = () => {
   const navigate = useNavigate();
@@ -29,14 +27,13 @@ const InventorySalesSystem = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState('');
 
-  // ✅ Definisikan tab yang diizinkan per role
+  // ✅ Tambahkan tab yang diizinkan
   const allowedTabs = {
-    admin: ['dashboard', 'products', 'sales', 'reports', 'settings'],
+    admin: ['dashboard', 'products', 'sales', 'reports', 'settings', 'activity'],
     gudang: ['products'],
     kasir: ['sales'],
   };
 
-  // Fetch data awal
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -61,7 +58,6 @@ const InventorySalesSystem = () => {
     fetchData();
   }, []);
 
-  // Cek login user
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -75,7 +71,6 @@ const InventorySalesSystem = () => {
     setActiveTab(currentTab);
   }, [currentTab]);
 
-  // ⛔ Cek izin role
   const isAllowed = allowedTabs[userRole]?.includes(activeTab);
 
   const fetchProducts = async () => {
@@ -111,7 +106,6 @@ const InventorySalesSystem = () => {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className="ml-64 p-8">
-        {/* 🛡️ Privilege Check */}
         {!isAllowed ? (
           <AccessDenied />
         ) : (
@@ -135,11 +129,12 @@ const InventorySalesSystem = () => {
               <Reports products={products} sales={sales} />
             )}
             {activeTab === 'settings' && <Settings />}
+            {activeTab === 'activity' && <ActivityLog />} {/* ✅ Tampilkan activity log */}
           </>
         )}
       </div>
 
-      {/* Modals */}
+      {/* === Modals === */}
       {showAddProduct && (
         <AddProductModal
           setShowAddProduct={setShowAddProduct}

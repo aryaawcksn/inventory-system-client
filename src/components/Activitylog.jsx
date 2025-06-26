@@ -3,6 +3,7 @@ import BASE_URL from '../services/config'; // pastikan path sesuai
 const res = await fetch(`${BASE_URL}/api/activity`);
 
 
+
 const ActivityLog = () => {
   const [logs, setLogs] = useState([]);
 
