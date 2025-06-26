@@ -7,7 +7,8 @@ import {
   ShoppingCart,
   TrendingUp,
   Settings as SettingsIcon,
-  LogOut
+  LogOut,
+  FileText
 } from 'lucide-react';
 
 const baseURL = import.meta.env.VITE_API_URL;
@@ -27,12 +28,14 @@ const Sidebar = ({ userImage }) => {
   const currentPath = location.pathname.replace('/', '');
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'products', label: 'Produk', icon: Package },
-    { id: 'sales', label: 'Penjualan', icon: ShoppingCart },
-    { id: 'reports', label: 'Laporan', icon: TrendingUp },
-    { id: 'settings', label: 'Pengaturan', icon: SettingsIcon },
-  ];
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { id: 'products', label: 'Produk', icon: Package },
+  { id: 'sales', label: 'Penjualan', icon: ShoppingCart },
+  { id: 'reports', label: 'Laporan', icon: TrendingUp },
+  { id: 'activity', label: 'Aktivitas', icon: FileText }, // 👈 Tambahan tab activity
+  { id: 'settings', label: 'Pengaturan', icon: SettingsIcon },
+];
+
 
   const handleLogout = async () => {
   const user = JSON.parse(localStorage.getItem('user'));
