@@ -15,17 +15,19 @@ const ActivityLog = () => {
       }
     };
 
-    fetchLogs(); // ⬅️ ini dipanggil di dalam useEffect, aman
+    fetchLogs(); // 🔁 Panggil saat komponen mount
   }, []);
 
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Log Aktivitas</h2>
       <ul className="space-y-2">
-        {logs.map((log, i) => (
-          <li key={i} className="p-2 bg-white rounded shadow text-sm">
+        {logs.map((log, index) => (
+          <li key={index} className="p-2 bg-white rounded shadow text-sm">
             <strong>{log.user?.name}</strong>: {log.action} —{' '}
-            <span className="text-gray-500">{new Date(log.timestamp).toLocaleString()}</span>
+            <span className="text-gray-500">
+              {new Date(log.timestamp).toLocaleString()}
+            </span>
           </li>
         ))}
       </ul>
