@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import BASE_URL from '../services/config'; // pastikan file ini ada dan benar
+import BASE_URL from '../services/config';
 
 const ActivityLog = () => {
   const [logs, setLogs] = useState([]);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -13,22 +12,20 @@ const ActivityLog = () => {
         setLogs(data.logs || []);
       } catch (err) {
         console.error('❌ Gagal ambil log:', err);
-        setError('Gagal memuat log aktivitas');
       }
     };
 
-    fetchLogs();
+    fetchLogs(); // ⬅️ ini dipanggil di dalam useEffect, aman
   }, []);
 
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Log Aktivitas</h2>
-      {error && <p className="text-red-500">{error}</p>}
       <ul className="space-y-2">
-        {logs.map((log, index) => (
-          <li key={index} className="bg-white p-3 rounded shadow text-sm">
-            <span className="font-medium">{log.user?.name || 'Unknown'}:</span>{' '}
-            {log.action} — <span className="text-gray-500">{new Date(log.timestamp).toLocaleString()}</span>
+        {logs.map((log, i) => (
+          <li key={i} className="p-2 bg-white rounded shadow text-sm">
+            <strong>{log.user?.name}</strong>: {log.action} —{' '}
+            <span className="text-gray-500">{new Date(log.timestamp).toLocaleString()}</span>
           </li>
         ))}
       </ul>
