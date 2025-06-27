@@ -189,7 +189,7 @@ const ProductManagement = () => {
               {loading
                 ? [...Array(6)].map((_, i) => <ProductSkeleton key={i} />)
                 : sortedFilteredProducts.map(product => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
