@@ -9,6 +9,61 @@ const DataSection = () => {
   window.open(`${baseURL}/api/sales/export-json`, '_blank');
 };
 
+const handleExportProduk = async () => {
+  try {
+    const res = await fetch(`${baseURL}/api/product/export-json`);
+    if (!res.ok) throw new Error('Gagal mengambil data');
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const now = new Date();
+    const tanggal = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getFullYear()}`;
+    const filename = `produk-${tanggal}.json`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('❌ Gagal export produk:', error);
+    alert('Gagal mengunduh file produk.');
+  }
+};
+
+const handleImportProduct = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const products = JSON.parse(text);
+
+    const res = await fetch(`${baseURL}/api/products/import-json`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(products),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(data.message || 'Import produk berhasil!');
+      fetchProducts(); // ⏮ Refresh produk setelah import
+    } else {
+      alert(data.message || 'Gagal import produk.');
+    }
+  } catch (err) {
+    console.error('❌ Gagal membaca file JSON:', err);
+    alert('File JSON tidak valid atau gagal diproses.');
+  }
+};
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
@@ -56,7 +111,7 @@ const DataSection = () => {
 
       const data = await res.json();
       if (res.ok) {
-        alert('🧹 Semua data penjualan berhasil dihapus');
+        alert('✅ Semua data penjualan berhasil dihapus');
       } else {
         alert('❌ Gagal reset: ' + data.message);
       }
@@ -65,9 +120,10 @@ const DataSection = () => {
       console.error(error);
     }
   };
+  
 
   const handleResetAll = async () => {
-    const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data produk dan penjualan?');
+    const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data produk? Tindakan ini tidak dapat dibatalkan.');
     if (!confirmed) return;
 
     const user = JSON.parse(localStorage.getItem('user'));
@@ -99,11 +155,17 @@ const DataSection = () => {
       <div className="space-y-4">
         {/* EXPORT */}
         <button
-          onClick={handleExport}
+          onClick={handleExportProduk}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
         >
-          Export Data Penjualan (JSON)
+          Export Data Produk (JSON)
         </button>
+        <button
+            onClick={handleExport}
+            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
+          >
+            Import Data Penjualan (JSON)
+          </button>
 
         {/* IMPORT */}
         <div className="space-y-2">
@@ -113,6 +175,12 @@ const DataSection = () => {
   onChange={handleFileChange}
   className="w-full text-sm text-gray-700"
 />
+          <button
+            onClick={handleImportProduct}
+            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
+          >
+            Import Data Produk (JSON)
+          </button>
           <button
             onClick={handleImport}
             className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
@@ -126,7 +194,7 @@ const DataSection = () => {
           onClick={handleResetAll}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full"
         >
-          Reset Semua Data
+          Reset Data Produk
         </button>
         <button
           onClick={handleReset}
