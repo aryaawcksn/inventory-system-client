@@ -28,6 +28,7 @@ const InventorySalesSystem = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState('');
   const [authLoading, setAuthLoading] = useState(true);
+  const [authDone, setAuthDone] = useState(false); 
 
   // ✅ Tambahkan tab yang diizinkan
   
@@ -61,16 +62,25 @@ const InventorySalesSystem = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   const user = JSON.parse(localStorage.getItem('user'));
   if (!user) {
     navigate('/');
   } else {
     setUserRole(user.role);
+    setAuthDone(true); // ✅ role didapat
   }
-  setAuthLoading(false); // ✅ auth check selesai
 }, [navigate]);
 
+useEffect(() => {
+  if (authDone && !isLoading) {
+    const timer = setTimeout(() => {
+      setAuthLoading(false);
+    }, 500); // delay setelah data siap dan role diketahui
+
+    return () => clearTimeout(timer);
+  }
+}, [authDone, isLoading]);
 
   useEffect(() => {
     setActiveTab(currentTab);
@@ -150,11 +160,15 @@ useEffect(() => {
 
 if (authLoading) {
   return (
-    <div className="flex items-center justify-center h-screen text-gray-500">
-      Mohon tunggu, sedang memuat data...
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+        <p className="text-gray-600 text-sm">Memuat Data...</p>
+      </div>
     </div>
   );
 }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
