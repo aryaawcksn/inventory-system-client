@@ -44,6 +44,7 @@ const ProductManagement = () => {
       const res = await fetch(`${baseURL}/api/products`);
       const data = await res.json();
       setProducts(data.products);
+      console.log('📦 Produk masuk ke state:', data.products);
     } catch (err) {
       console.error('Gagal memuat data produk:', err);
     } finally {
