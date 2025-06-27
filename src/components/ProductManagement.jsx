@@ -3,8 +3,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Eye, Edit, Trash2, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import AddProductModal from './AddProductModal';
 
-
-
 const baseURL = import.meta.env.VITE_API_URL;
 
 const ProductSkeleton = () => (
@@ -244,7 +242,15 @@ const ProductManagement = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              }
+              {!loading && sortedFilteredProducts.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="px-6 py-6 text-center text-gray-400">
+                    Belum ada data produk
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
