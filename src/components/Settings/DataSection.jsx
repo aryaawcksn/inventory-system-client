@@ -5,8 +5,29 @@ const baseURL = import.meta.env.VITE_API_URL;
 const DataSection = () => {
   const [file, setFile] = useState(null);
 
-  const handleExport = () => {
-  window.open(`${baseURL}/api/sales/export-json`, '_blank');
+  const handleExport = async () => {
+  try {
+    const res = await fetch(`${baseURL}/api/sales/export-json`);
+    if (!res.ok) throw new Error('Gagal mengambil data');
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const now = new Date();
+    const tanggal = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getFullYear()}`;
+    const filename = `penjualan-${tanggal}.json`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('❌ Gagal export penjualan:', error);
+    alert('Gagal mengunduh file penjualan.');
+  }
 };
 
 const handleExportProduk = async () => {
