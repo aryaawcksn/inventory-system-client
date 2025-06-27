@@ -1,7 +1,7 @@
-// src/components/Reports.jsx
 import React from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { Calendar } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -45,7 +45,7 @@ const Reports = ({ products, sales, isLoading }) => {
     return sum + (isNaN(qty) ? 0 : qty);
   }, 0);
 
-  // 📊 Siapkan data grafik penjualan per tanggal
+  // 📊 Data grafik penjualan per tanggal
   const salesByDateMap = {};
 
   sales.forEach((sale) => {
@@ -74,7 +74,19 @@ const Reports = ({ products, sales, isLoading }) => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Laporan</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Laporan</h1>
+        <div className="flex items-center space-x-2 text-gray-600">
+          <Calendar className="w-5 h-5" />
+          <span>
+            {new Date().toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Ringkasan Penjualan */}
@@ -96,7 +108,7 @@ const Reports = ({ products, sales, isLoading }) => {
           </div>
         </div>
 
-        {/* Status Inventory */}
+        {/* Ringkasan Inventory */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Inventory</h3>
           <div className="space-y-4">
@@ -115,37 +127,40 @@ const Reports = ({ products, sales, isLoading }) => {
           </div>
         </div>
 
-        {/* 📈 Grafik Penjualan */}
+        {/* Grafik Penjualan */}
         <div className="bg-white rounded-xl shadow-lg p-6 col-span-1 lg:col-span-2">
-  <h3 className="text-lg font-semibold text-gray-900 mb-4">Performa Penjualan</h3>
-  <div className="w-full h-[320px]">
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={salesChartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-        <YAxis
-          width={90} // 👈 tambahkan lebar agar angka besar muat
-          tick={{ fontSize: 12 }}
-          tickFormatter={(val) => `Rp${(val / 1000000).toFixed(1)}jt`}
-        />
-        <Tooltip
-          formatter={(value) =>
-            new Intl.NumberFormat('id-ID', {
-              style: 'currency',
-              currency: 'IDR',
-              minimumFractionDigits: 0,
-            }).format(value)
-          }
-        />
-        <Line
-          type="monotone"
-          dataKey="total"
-          stroke="#3B82F6"
-          strokeWidth={2}
-          dot={{ r: 3 }}
-          activeDot={{ r: 6 }}
-        />
-      </LineChart>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performa Penjualan</h3>
+          <div className="w-full h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={salesChartData}
+                margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis
+                  width={90}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(val) => `Rp${(val / 1000000).toFixed(1)}jt`}
+                />
+                <Tooltip
+                  formatter={(value) =>
+                    new Intl.NumberFormat('id-ID', {
+                      style: 'currency',
+                      currency: 'IDR',
+                      minimumFractionDigits: 0,
+                    }).format(value)
+                  }
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>

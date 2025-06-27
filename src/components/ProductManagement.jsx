@@ -3,10 +3,34 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Eye, Edit, Trash2, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import AddProductModal from './AddProductModal';
 
+
+
 const baseURL = import.meta.env.VITE_API_URL;
+
+const ProductSkeleton = () => (
+  <tr className="animate-pulse">
+    <td className="px-6 py-4">
+      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <div className="h-3 bg-gray-100 rounded w-1/2 mt-2"></div>
+    </td>
+    <td className="px-6 py-4">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </td>
+    <td className="px-6 py-4">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </td>
+    <td className="px-6 py-4">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </td>
+    <td className="px-6 py-4">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </td>
+  </tr>
+);
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('sku');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -14,14 +38,16 @@ const ProductManagement = () => {
   const [modalMode, setModalMode] = useState('add');
   const [showAddProduct, setShowAddProduct] = useState(false);
 
-  // 🔁 Ambil data dari API
   const fetchProducts = async () => {
+    setLoading(true);
     try {
       const res = await fetch(`${baseURL}/api/products`);
       const data = await res.json();
       setProducts(data.products);
     } catch (err) {
       console.error('Gagal memuat data produk:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,10 +106,17 @@ const ProductManagement = () => {
     const confirm = window.confirm('Apakah Anda yakin ingin menghapus produk ini?');
     if (!confirm) return;
 
+    const user = JSON.parse(localStorage.getItem('user'));
+
     try {
       const res = await fetch(`${baseURL}/api/products/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user': JSON.stringify(user),
+        },
       });
+
       const data = await res.json();
 
       if (res.ok) {
@@ -128,25 +161,14 @@ const ProductManagement = () => {
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <button
-              onClick={() => toggleSort('sku')}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
-            >
+            <button onClick={() => toggleSort('sku')} className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
               {sortBy === 'sku' && sortOrder === 'asc' ? <ArrowDownAZ /> : <ArrowUpAZ />}
               <span>SKU</span>
             </button>
-
-            <button
-              onClick={() => toggleSort('stock')}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
-            >
+            <button onClick={() => toggleSort('stock')} className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
               <span>Stok</span>
             </button>
-
-            <button
-              onClick={() => toggleSort('price')}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
-            >
+            <button onClick={() => toggleSort('price')} className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
               <span>Harga</span>
             </button>
           </div>
@@ -164,77 +186,69 @@ const ProductManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sortedFilteredProducts.map(product => (
-                <tr key={product.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                      <div className="text-sm text-gray-500">SKU: {product.sku}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  product.stock === 0
-                    ? 'bg-red-600 text-white'
-                    : product.stock < 10
-                    ? 'bg-red-100 text-red-800'
-                    : product.stock < 20
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-green-100 text-green-800'
-                }`}>
-                  {product.stock === 0 ? 'Stok Habis' : `${product.stock} unit`}
-                </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(product.price)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      product.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {product.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        className="text-blue-600 hover:text-blue-900"
-                        onClick={() => {
+              {loading
+                ? [...Array(6)].map((_, i) => <ProductSkeleton key={i} />)
+                : sortedFilteredProducts.map(product => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        <div className="text-sm text-gray-500">SKU: {product.sku}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        product.stock === 0
+                          ? 'bg-red-600 text-white'
+                          : product.stock < 10
+                          ? 'bg-red-100 text-red-800'
+                          : product.stock < 20
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {product.stock === 0 ? 'Stok Habis' : `${product.stock} unit`}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(product.price)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        product.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {product.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button className="text-blue-600 hover:text-blue-900" onClick={() => {
                           setSelectedProduct(product);
                           setModalMode('view');
                           setShowAddProduct(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="text-green-600 hover:text-green-900"
-                        onClick={() => {
+                        }}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-green-600 hover:text-green-900" onClick={() => {
                           setSelectedProduct(product);
                           setModalMode('edit');
                           setShowAddProduct(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="text-red-600 hover:text-red-900"
-                        onClick={() => handleDelete(product._id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        }}>
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(product._id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modal */}
       {showAddProduct && (
         <AddProductModal
           setShowAddProduct={setShowAddProduct}

@@ -1,24 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   DollarSign,
   ShoppingCart,
   BarChart3,
   Download,
-  Eye,
-  Edit,
 } from 'lucide-react';
 import StatCard from './StatCard';
+import SaleSkeleton from './SaleSkeleton';
 
 const SalesManagement = ({ sales, setShowSaleForm }) => {
+  const [loading, setLoading] = useState(true);
+
   const today = new Date().toLocaleDateString('id-ID'); // e.g. "23/6/2025"
-
   const totalSalesValue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
-
   const todaySales = sales.filter((sale) => {
-  const saleDate = new Date(sale.date).toLocaleDateString('id-ID');
-  return saleDate === today;
-}).length;
+    const saleDate = new Date(sale.date).toLocaleDateString('id-ID');
+    return saleDate === today;
+  }).length;
 
   const avgTransaction = totalSalesValue / (sales.length || 1);
 
@@ -36,26 +35,29 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
       year: 'numeric',
     });
 
-    const getSalesByDate = (dateStr) => {
-  return sales
-    .filter(sale => new Date(sale.date).toLocaleDateString('id-ID') === dateStr)
-    .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
-};
+  const getSalesByDate = (dateStr) => {
+    return sales
+      .filter(sale => new Date(sale.date).toLocaleDateString('id-ID') === dateStr)
+      .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+  };
 
-      const todayStr = new Date().toLocaleDateString('id-ID');
-      const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString('id-ID');
+  const todayStr = new Date().toLocaleDateString('id-ID');
+  const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString('id-ID');
 
-      const todayTotal = getSalesByDate(todayStr);
-      const yesterdayTotal = getSalesByDate(yesterdayStr);
+  const todayTotal = getSalesByDate(todayStr);
+  const yesterdayTotal = getSalesByDate(yesterdayStr);
 
-      const trendValue = yesterdayTotal
-        ? (((todayTotal - yesterdayTotal) / yesterdayTotal) * 100).toFixed(1)
-        : 0;
+  const trendValue = yesterdayTotal
+    ? (((todayTotal - yesterdayTotal) / yesterdayTotal) * 100).toFixed(1)
+    : 0;
 
-      const trendText = trendValue >= 0 ? `+${trendValue}%` : `${trendValue}%`;
-// const trendColor = trendValue >= 0 ? 'text-green-600' : 'text-red-600'; ← tidak dipakai, bisa hapus
+  const trendText = trendValue >= 0 ? `+${trendValue}%` : `${trendValue}%`;
 
-
+  // Set loading false setelah 500ms untuk simulasi
+  useEffect(() => {
+    const timeout = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timeout);
+  }, [sales]);
 
   return (
     <div className="space-y-6">
@@ -77,18 +79,21 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
           icon={DollarSign}
           color="#10B981"
           trend={trendText}
+          loading={loading}
         />
         <StatCard
           title="Transaksi Hari Ini"
           value={todaySales}
           icon={ShoppingCart}
           color="#3B82F6"
+          loading={loading}
         />
         <StatCard
           title="Rata-rata Transaksi"
           value={formatCurrency(avgTransaction)}
           icon={BarChart3}
           color="#8B5CF6"
+          loading={loading}
         />
       </div>
 
@@ -110,37 +115,35 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Jumlah</th>
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Total</th>
                 <th className="px-6 py-3 text-gray-500 uppercase tracking-wider">Status</th>
-                
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">{formatDate(sale.date)}</td>
-                  <td className="px-6 py-4">{sale.items}</td>
-                  <td className="px-6 py-4">{sale.qty}</td>
-                  <td className="px-6 py-4 font-medium">{formatCurrency(sale.total)}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        sale.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {sale.status === 'completed' ? 'Selesai' : 'Pending'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {sales.length === 0 && (
+              {loading ? (
+                [...Array(5)].map((_, i) => <SaleSkeleton key={i} />)
+              ) : (
+                sales.map((sale) => (
+                  <tr key={sale.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">{formatDate(sale.date)}</td>
+                    <td className="px-6 py-4">{sale.items}</td>
+                    <td className="px-6 py-4">{sale.qty}</td>
+                    <td className="px-6 py-4 font-medium">{formatCurrency(sale.total)}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          sale.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {sale.status === 'completed' ? 'Selesai' : 'Pending'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && sales.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="px-6 py-6 text-center text-gray-400">
+                  <td colSpan="5" className="px-6 py-6 text-center text-gray-400">
                     Belum ada data penjualan
                   </td>
                 </tr>

@@ -59,6 +59,33 @@ const DataSection = () => {
     }
   };
 
+  const handleResetAll = async () => {
+  const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data produk? Ini akan menghapus semua produk dan tidak dapat dikembalikan.');
+  if (!confirmed) return;
+
+  const user = JSON.parse(localStorage.getItem('user')); // ambil data user untuk log
+
+  try {
+    const res = await fetch(`${baseURL}/api/system/reset-all`, {
+      method: 'DELETE',
+      headers: {
+        'x-user': JSON.stringify(user), // kirim header user
+      },
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || '✅ Semua data berhasil direset');
+    } else {
+      alert('✅ Semua data berhasil direset');
+    }
+  } catch (error) {
+    alert('❌ Terjadi kesalahan saat reset semua data');
+    console.error(error);
+  }
+};
+
+
   return (
     <div className="bg-white shadow rounded-lg p-6 space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">Backup & Restore</h3>
@@ -69,7 +96,7 @@ const DataSection = () => {
           onClick={handleExport}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
         >
-          📤 Export Data Penjualan
+          Export Data Penjualan
         </button>
 
         {/* IMPORT */}
@@ -84,17 +111,24 @@ const DataSection = () => {
             onClick={handleImport}
             className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
           >
-            📥 Import Data Penjualan
+            Import Data Penjualan
           </button>
         </div>
 
         {/* RESET */}
         <button
+          onClick={handleResetAll}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full"
+        >
+          Reset Data Produk
+        </button>
+        <button
           onClick={handleReset}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full"
         >
-          🧹 Reset Semua Data Penjualan
+          Reset Data Penjualan
         </button>
+        
       </div>
     </div>
   );

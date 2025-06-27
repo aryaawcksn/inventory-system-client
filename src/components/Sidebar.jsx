@@ -32,7 +32,7 @@ const Sidebar = ({ userImage }) => {
   { id: 'products', label: 'Produk', icon: Package },
   { id: 'sales', label: 'Penjualan', icon: ShoppingCart },
   { id: 'reports', label: 'Laporan', icon: TrendingUp },
-  { id: 'activity', label: 'Aktivitas', icon: FileText }, // 👈 Tambahan tab activity
+  { id: 'activity', label: 'Log Aktivitas', icon: FileText }, // 👈 Tambahan tab activity
   { id: 'settings', label: 'Pengaturan', icon: SettingsIcon },
 ];
 

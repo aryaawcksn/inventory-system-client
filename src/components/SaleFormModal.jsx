@@ -3,7 +3,9 @@ import Select from 'react-select';
 
 const baseURL = import.meta.env.VITE_API_URL;
 
-const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
+const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) => {
+  const [products, setProducts] = useState(parentProducts || []);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -14,6 +16,25 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
     total: 0,
     status: 'completed'
   });
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!parentProducts || parentProducts.length === 0) {
+        setLoadingProducts(true);
+        try {
+          const res = await fetch(`${baseURL}/api/products`);
+          const data = await res.json();
+          setProducts(data.products || []);
+        } catch (err) {
+          console.error('❌ Gagal mengambil produk:', err);
+        } finally {
+          setLoadingProducts(false);
+        }
+      }
+    };
+
+    fetchProducts();
+  }, [parentProducts]);
 
   const productOptions = products.map(p => ({
     value: p._id,
@@ -30,7 +51,7 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
       const qty = parseInt(form.qty) || 1;
       setForm(prev => ({ ...prev, total: price * qty, productId: selectedProductId }));
     }
-  }, [selectedProductId, form.qty]);
+  }, [selectedProductId, form.qty, products]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -137,15 +158,18 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Produk</label>
-            <Select
-              options={productOptions}
-              value={selectedOption}
-              onChange={(selected) => setSelectedProductId(selected?.value || null)}
-              placeholder="Cari produk..."
-              className="text-sm"
-            />
+            {loadingProducts ? (
+              <p className="text-gray-500 text-sm">Memuat produk...</p>
+            ) : (
+              <Select
+                options={productOptions}
+                value={selectedOption}
+                onChange={(selected) => setSelectedProductId(selected?.value || null)}
+                placeholder="Cari produk..."
+                className="text-sm"
+              />
+            )}
           </div>
-
           <input
             type="number"
             name="qty"

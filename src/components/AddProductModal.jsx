@@ -35,7 +35,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
   };
 
   const validate = () => {
-    if (!form.name || !form.category || !form.sku || !form.stock || !form.price) {
+    if (!form.name || !form.sku || !form.stock || !form.price) {
       setMessage('Semua field wajib diisi.');
       return false;
     }
@@ -49,6 +49,11 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
       setMessage('Harga minimal 1000.');
       return false;
     }
+
+    if (form.sku.trim() === '' || !/^[a-zA-Z0-9-_]+$/.test(form.sku)) {
+  setMessage('Masukan SKU yang valid.');
+  return false;
+}
 
     return true;
   };
@@ -83,21 +88,6 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
 
     if (res.ok) {
       setSuccessMessage(data.message || (isEdit ? 'Produk berhasil diperbarui!' : 'Produk berhasil ditambahkan!'));
-
-      // ✅ Tambah log aktivitas
-      await fetch(`${baseURL}/api/activity`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          name: user.name,
-          role: user.role,
-          action: isEdit
-        }),
-      });
-
       fetchProducts();
       setShowAddProduct(false);
 
@@ -149,32 +139,17 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
             readOnly={isReadOnly}
             className="w-full p-2 border rounded bg-white"
           />
-
-          <select
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            disabled={isReadOnly}
-            className="w-full p-2 border rounded bg-white"
-            required
-          >
-            <option value="">Pilih Kategori</option>
-            <option value="Elektronik">Elektronik</option>
-            <option value="Aksesoris">Aksesoris</option>
-            <option value="Audio">Audio</option>
-            <option value="Pakaian">Pakaian</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-
-          <input
-            type="text"
-            name="sku"
-            placeholder="SKU"
-            value={form.sku}
-            onChange={handleChange}
-            readOnly={isReadOnly}
-            className="w-full p-2 border rounded bg-white"
-          />
+          <div>
+            <input
+              type="text"
+              name="sku"
+              placeholder="SKU (misal: ABC123)"
+              value={form.sku}
+              onChange={handleChange}
+              readOnly={isReadOnly}
+              className="w-full p-2 border rounded bg-white"
+            />
+          </div>
           <input
             type="number"
             name="stock"

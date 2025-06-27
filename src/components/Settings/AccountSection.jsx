@@ -13,12 +13,14 @@ const AccountSection = () => {
   const [message, setMessage] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${baseURL}/api/users`)
       .then(res => res.json())
       .then(data => setUsers(data.users))
       .catch(err => console.error('Gagal memuat data pengguna:', err));
+      fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -26,7 +28,20 @@ const AccountSection = () => {
   if (storedUser) {
     setCurrentUser(JSON.parse(storedUser));
   }
+  fetchUsers();
 }, []);
+
+const fetchUsers = async () => {
+  try {
+    const res = await fetch(`${baseURL}/api/users`);
+    const data = await res.json();
+    setUsers(data.users);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false); // loading selesai
+  }
+};
 
   const resetForm = () => {
     setName('');
@@ -55,6 +70,7 @@ const AccountSection = () => {
 
       if (res.ok) {
         showMessage('Akun berhasil ditambahkan');
+        await logActivity(`Menambahkan akun baru: ${name} (${email}) dengan role ${assignedRole}`);
         resetForm();
         const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
         setUsers(updated.users);
@@ -69,8 +85,21 @@ const AccountSection = () => {
 
   const handleEditAccount = async () => {
   if (!name || !email || !assignedRole) return alert('Lengkapi semua data');
+  
+  const editingUser = users.find(user => user.id === editingUserId);
+  const adminCount = users.filter(u => u.role === 'admin').length;
+
+  if (
+    editingUser?.role === 'admin' &&
+    assignedRole !== 'admin' &&
+    adminCount <= 1
+  ) {
+    alert('Tidak dapat mengubah role admin terakhir.');
+    return;
+  }
 
   try {
+    const oldUser = users.find(u => u.id === editingUserId);
     const res = await fetch(`${baseURL}/api/users/${editingUserId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -78,7 +107,8 @@ const AccountSection = () => {
     });
 
     if (res.ok) {
-      alert('Berhasil Edit Akun');
+      await logActivity(`Mengedit akun: ${name} (${email}), role: ${oldUser?.role} ➜ ${assignedRole}`);
+      showMessage('Akun berhasil diperbarui');
       resetForm(); // clear state
       const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
       setUsers(updated.users);
@@ -91,20 +121,55 @@ const AccountSection = () => {
   }
 };
 
-
   const handleDeleteAccount = async (userId) => {
-    const confirmed = window.confirm('Apakah Anda yakin ingin menghapus akun ini?');
-    if (!confirmed) return;
+  const confirmed = window.confirm('Apakah Anda yakin ingin menghapus akun ini?');
+  if (!confirmed) return;
 
-    try {
-      await fetch(`${baseURL}/api/users/${userId}`, {
-        method: 'DELETE'
-      });
-      setUsers(users.filter(user => user.id !== userId));
-    } catch (error) {
-      console.error('Gagal menghapus akun:', error);
-    }
-  };
+  const deletedUser = users.find(user => user.id === userId);
+
+  if (deletedUser?.id === currentUser?.id) {
+  alert('Tidak dapat menghapus akun Anda sendiri.');
+  return;
+  }
+
+  const adminCount = users.filter(u => u.role === 'admin').length;
+
+  if (deletedUser?.role === 'admin' && adminCount <= 1) {
+    alert('Tidak dapat menghapus akun admin terakhir.');
+    return;
+  }
+
+
+  try {
+    await fetch(`${baseURL}/api/users/${userId}`, {
+      method: 'DELETE'
+    });
+    showMessage('Akun berhasil dihapus');
+    setUsers(users.filter(user => user.id !== userId));
+    await logActivity(`Menghapus akun: ${deletedUser?.name} (${deletedUser?.email})`);
+  } catch (error) {
+    console.error('Gagal menghapus akun:', error);
+  }
+};
+
+  const logActivity = async (action) => {
+  if (!currentUser) return;
+
+  try {
+    await fetch(`${baseURL}/api/activity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        name: currentUser.name,
+        role: currentUser.role,
+        action, // bisa string dinamis
+      }),
+    });
+  } catch (err) {
+    console.error('Gagal mengirim log aktivitas:', err);
+  }
+};
 
 
   return (
@@ -287,54 +352,74 @@ const AccountSection = () => {
       <div className="mt-8">
   <h4 className="text-md font-semibold mb-2">Daftar Pengguna</h4>
   <table className="min-w-full text-sm border">
-    <thead>
-      <tr className="bg-gray-100 text-left">
-        <th className="p-2 border">Nama</th>
-        <th className="p-2 border">Role</th>
-        <th className="p-2 border">Aksi</th>
-      </tr>
-    </thead>
-    <tbody>
-      {users.map(user => (
+  <thead>
+    <tr className="bg-gray-100 text-left">
+      <th className="p-2 border">Nama</th>
+      <th className="p-2 border">Role</th>
+      <th className="p-2 border">Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+    {loading ? (
+      // Skeleton 5 baris
+      Array.from({ length: 5 }).map((_, i) => (
+        <tr key={i} className="border-t animate-pulse">
+          <td className="p-2 border">
+            <div className="h-4 w-32 bg-gray-200 rounded" />
+          </td>
+          <td className="p-2 border">
+            <div className="h-4 w-20 bg-gray-200 rounded" />
+          </td>
+          <td className="p-2 border">
+            <div className="flex space-x-2">
+              <div className="h-4 w-4 bg-gray-200 rounded" />
+              <div className="h-4 w-4 bg-gray-200 rounded" />
+              <div className="h-4 w-4 bg-gray-200 rounded" />
+            </div>
+          </td>
+        </tr>
+      ))
+    ) : (
+      users.map((user) => (
         <tr key={user.id} className="border-t">
           <td className="p-2 border">{user.name}</td>
           <td className="p-2 border capitalize">{user.role}</td>
           <td className="p-2 border">
             <div className="flex items-center space-x-2">
               <button
-                  className="text-blue-600 hover:text-blue-900"
-                  onClick={() => {
-                    setSelectedUser(user);
-                    window.scrollTo({ top: 550, behavior: 'smooth' }); // scroll ke atas dengan animasi
-                  }}
-                >
+                className="text-blue-600 hover:text-blue-900"
+                onClick={() => {
+                  setSelectedUser(user);
+                  window.scrollTo({ top: 550, behavior: 'smooth' });
+                }}
+              >
                 <Eye className="w-4 h-4" />
               </button>
-                <button
-                  onClick={() => {
-                    setName(user.name || '');
-                    setEmail(user.email);
-                    setAssignedRole(user.role);
-                    setEditingUserId(user.id);
-                    window.scrollTo({ top: 0, behavior: 'smooth' }); // 👈 ini bagian yang scroll ke atas
-              }}
-                  className="text-green-600 hover:text-green-900"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDeleteAccount(user.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </td>
-
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              <button
+                onClick={() => {
+                  setName(user.name || '');
+                  setEmail(user.email);
+                  setAssignedRole(user.role);
+                  setEditingUserId(user.id);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-green-600 hover:text-green-900"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteAccount(user.id)}
+                className="text-red-600 hover:text-red-900"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))
+    )}
+  </tbody>
+</table>
       </div>
     </div>
   );
