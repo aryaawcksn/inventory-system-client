@@ -6,37 +6,42 @@ const DataSection = () => {
   const [file, setFile] = useState(null);
 
   const handleExport = () => {
-    window.open(`${baseURL}/api/sales/export`, '_blank');
-  };
+  window.open(`${baseURL}/api/sales/export-json`, '_blank');
+};
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
   const handleImport = async () => {
-    if (!file) return alert('📁 Pilih file CSV terlebih dahulu');
+  if (!file) return alert('📁 Pilih file JSON terlebih dahulu');
 
-    const formData = new FormData();
-    formData.append('file', file);
-
+  const reader = new FileReader();
+  reader.onload = async (e) => {
     try {
-      const res = await fetch(`${baseURL}/api/sales/import`, {
+      const jsonData = JSON.parse(e.target.result);
+      const res = await fetch(`${baseURL}/api/sales/import-json`, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonData),
       });
 
       const data = await res.json();
       if (res.ok) {
-        alert(`✅ Berhasil mengimpor ${data.message}`);
-        setFile(null);
+        alert(`✅ ${data.message}`);
       } else {
         alert('❌ Gagal import: ' + data.message);
       }
-    } catch (error) {
-      alert('❌ Terjadi kesalahan saat mengunggah file');
-      console.error(error);
+    } catch (err) {
+      alert('❌ Format file tidak valid atau error saat import');
+      console.error(err);
     }
   };
+
+  reader.readAsText(file);
+};
 
   const handleReset = async () => {
     const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data penjualan? Tindakan ini tidak dapat dibatalkan.');
@@ -60,31 +65,30 @@ const DataSection = () => {
   };
 
   const handleResetAll = async () => {
-  const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data produk? Ini akan menghapus semua produk dan tidak dapat dikembalikan.');
-  if (!confirmed) return;
+    const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data produk dan penjualan?');
+    if (!confirmed) return;
 
-  const user = JSON.parse(localStorage.getItem('user')); // ambil data user untuk log
+    const user = JSON.parse(localStorage.getItem('user'));
 
-  try {
-    const res = await fetch(`${baseURL}/api/system/reset-all`, {
-      method: 'DELETE',
-      headers: {
-        'x-user': JSON.stringify(user), // kirim header user
-      },
-    });
+    try {
+      const res = await fetch(`${baseURL}/api/system/reset-all`, {
+        method: 'DELETE',
+        headers: {
+          'x-user': JSON.stringify(user),
+        },
+      });
 
-    const data = await res.json();
-    if (res.ok) {
-      alert(data.message || '✅ Semua data berhasil direset');
-    } else {
-      alert('✅ Semua data berhasil direset');
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || '✅ Semua data berhasil direset');
+      } else {
+        alert('❌ Gagal reset semua data');
+      }
+    } catch (error) {
+      alert('❌ Terjadi kesalahan saat reset semua data');
+      console.error(error);
     }
-  } catch (error) {
-    alert('❌ Terjadi kesalahan saat reset semua data');
-    console.error(error);
-  }
-};
-
+  };
 
   return (
     <div className="bg-white shadow rounded-lg p-6 space-y-6">
@@ -96,14 +100,14 @@ const DataSection = () => {
           onClick={handleExport}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
         >
-          Export Data Penjualan
+          Export Data Penjualan (JSON)
         </button>
 
         {/* IMPORT */}
         <div className="space-y-2">
           <input
             type="file"
-            accept=".csv"
+            accept=".json"
             onChange={handleFileChange}
             className="w-full text-sm text-gray-700"
           />
@@ -111,7 +115,7 @@ const DataSection = () => {
             onClick={handleImport}
             className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
           >
-            Import Data Penjualan
+            Import Data Penjualan (JSON)
           </button>
         </div>
 
@@ -120,7 +124,7 @@ const DataSection = () => {
           onClick={handleResetAll}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full"
         >
-          Reset Data Produk
+          Reset Semua Data
         </button>
         <button
           onClick={handleReset}
@@ -128,7 +132,6 @@ const DataSection = () => {
         >
           Reset Data Penjualan
         </button>
-        
       </div>
     </div>
   );

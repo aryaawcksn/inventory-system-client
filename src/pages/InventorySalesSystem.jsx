@@ -122,6 +122,26 @@ const InventorySalesSystem = () => {
   }
 }, [currentTab]);
 
+useEffect(() => {
+  if (currentTab === 'dashboard') {
+    setIsLoading(true);
+    Promise.all([
+      fetch(`${baseURL}/api/products`),
+      fetch(`${baseURL}/api/sales`)
+    ])
+      .then(async ([resProducts, resSales]) => {
+        const dataProducts = await resProducts.json();
+        const dataSales = await resSales.json();
+
+        setProducts(dataProducts.products || []);
+        setSales(dataSales.sales || []);
+      })
+      .catch((err) => {
+        console.error('Gagal mengambil data untuk dashboard:', err);
+      })
+      .finally(() => setIsLoading(false));
+  }
+}, [currentTab]);
 
   return (
     <div className="min-h-screen bg-gray-50">
