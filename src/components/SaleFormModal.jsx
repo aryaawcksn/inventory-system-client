@@ -97,7 +97,7 @@ const SaleFormModal = ({ setShowSaleForm, products, onSubmit }) => {
             userId: user.id,
             name: user.name,
             role: user.role,
-            action: `Menambahkan transaksi: ${form.qty} x ${selectedProduct.name}`
+            action: `Menambahkan transaksi: ${form.qty} x untuk produk ${selectedProduct.name}`
           })
         });
       } else {

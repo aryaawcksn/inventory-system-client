@@ -13,7 +13,6 @@ import StatCard from './StatCard';
 const SalesManagement = ({ sales, setShowSaleForm }) => {
   const today = new Date().toLocaleDateString('id-ID'); // e.g. "23/6/2025"
 
-
   const totalSalesValue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
 
   const todaySales = sales.filter((sale) => {

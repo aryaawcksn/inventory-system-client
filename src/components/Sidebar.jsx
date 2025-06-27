@@ -56,8 +56,6 @@ const Sidebar = ({ userImage }) => {
   window.location.href = '/'; // atau navigate('/')
 };
 
-  
-
   if (!user) {
     return (
       <div className="w-64 p-6 text-gray-500 text-sm">

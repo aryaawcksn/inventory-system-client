@@ -95,8 +95,6 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
           name: user.name,
           role: user.role,
           action: isEdit
-            ? `Mengedit produk "${form.name}"`
-            : `Menambahkan produk "${form.name}"`
         }),
       });
 
