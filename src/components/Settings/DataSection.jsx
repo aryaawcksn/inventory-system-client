@@ -11,7 +11,7 @@ const DataSection = () => {
 
 const handleExportProduk = async () => {
   try {
-    const res = await fetch(`${baseURL}/api/product/export-json`);
+    const res = await fetch(`${baseURL}/api/products/export-json`);
     if (!res.ok) throw new Error('Gagal mengambil data');
 
     const blob = await res.blob();
