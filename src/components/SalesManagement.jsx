@@ -4,7 +4,8 @@ import {
   DollarSign,
   ShoppingCart,
   BarChart3,
-  Download,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import StatCard from './StatCard';
 import SaleSkeleton from './SaleSkeleton';
@@ -12,14 +13,22 @@ import SaleSkeleton from './SaleSkeleton';
 const SalesManagement = ({ sales, setShowSaleForm }) => {
   const [loading, setLoading] = useState(true);
 
-  const today = new Date().toLocaleDateString('id-ID'); // e.g. "23/6/2025"
-  const totalSalesValue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
-  const todaySales = sales.filter((sale) => {
-    const saleDate = new Date(sale.date).toLocaleDateString('id-ID');
-    return saleDate === today;
-  }).length;
+  const toDateStr = (date) => date.toISOString().split('T')[0];
 
-  const avgTransaction = totalSalesValue / (sales.length || 1);
+  const getTotalSalesBetween = (startDate, endDate) => {
+    return sales
+      .filter((sale) => {
+        const saleDate = toDateStr(new Date(sale.date));
+        return saleDate >= toDateStr(startDate) && saleDate <= toDateStr(endDate);
+      })
+      .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+  };
+
+  const getSalesByDate = (dateStr) => {
+    return sales
+      .filter((sale) => toDateStr(new Date(sale.date)) === dateStr)
+      .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+  };
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('id-ID', {
@@ -35,25 +44,41 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
       year: 'numeric',
     });
 
-  const getSalesByDate = (dateStr) => {
-    return sales
-      .filter(sale => new Date(sale.date).toLocaleDateString('id-ID') === dateStr)
-      .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
-  };
+  // === Trend Mingguan ===
+  const today = new Date();
 
-  const todayStr = new Date().toLocaleDateString('id-ID');
-  const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString('id-ID');
+  const endThisWeek = new Date(today);
+  const startThisWeek = new Date(today);
+  startThisWeek.setDate(startThisWeek.getDate() - 6);
 
-  const todayTotal = getSalesByDate(todayStr);
-  const yesterdayTotal = getSalesByDate(yesterdayStr);
+  const endLastWeek = new Date(startThisWeek);
+  endLastWeek.setDate(endLastWeek.getDate() - 1);
+  const startLastWeek = new Date(endLastWeek);
+  startLastWeek.setDate(startLastWeek.getDate() - 6);
 
-  const trendValue = yesterdayTotal
-    ? (((todayTotal - yesterdayTotal) / yesterdayTotal) * 100).toFixed(1)
-    : 0;
+  const totalThisWeek = getTotalSalesBetween(startThisWeek, endThisWeek);
+  const totalLastWeek = getTotalSalesBetween(startLastWeek, endLastWeek);
+
+  const trendValue =
+    totalLastWeek > 0
+      ? (((totalThisWeek - totalLastWeek) / totalLastWeek) * 100).toFixed(1)
+      : totalThisWeek > 0
+      ? 100
+      : 0;
 
   const trendText = trendValue >= 0 ? `+${trendValue}%` : `${trendValue}%`;
+  const trendColor = trendValue >= 0 ? 'text-green-600' : 'text-red-600';
+  const trendIcon = trendValue >= 0 ? TrendingUp : TrendingDown;
 
-  // Set loading false setelah 500ms untuk simulasi
+  const totalSalesValue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
+
+  const todayStr = toDateStr(today);
+  const todaySales = sales.filter(
+    (sale) => toDateStr(new Date(sale.date)) === todayStr
+  ).length;
+
+  const avgTransaction = totalSalesValue / (sales.length || 1);
+
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timeout);
@@ -79,6 +104,8 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
           icon={DollarSign}
           color="#10B981"
           trend={trendText}
+          trendColor={trendColor}
+          trendIcon={trendIcon}
           loading={loading}
         />
         <StatCard
