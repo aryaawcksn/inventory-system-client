@@ -199,12 +199,21 @@ const handleImportProduct = async () => {
         {/* IMPORT */}
         <h3 className="text-lg font-semibold text-gray-900">Restore</h3>
         <div className="space-y-2">
-          <input
-              type="file"
-              accept=".json"
-              onChange={handleFileChange}
-              className="w-full text-sm text-gray-700"
-            />
+          <div className="w-full">
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer w-full block text-center bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-800 text-sm py-2 rounded-lg shadow-sm"
+              >
+                {file ? `📁 ${file.name}` : '📂 Pilih File .JSON'}
+              </label>
+              <input
+                id="file-upload"
+                type="file"
+                accept=".json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
           <button
             onClick={handleImportProduct}
             className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
