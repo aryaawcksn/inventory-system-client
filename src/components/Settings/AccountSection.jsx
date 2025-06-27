@@ -56,28 +56,10 @@ const fetchUsers = async () => {
     setTimeout(() => setMessage(''), 3000);
   };
 
-const isValidName = (name) => /^[a-zA-Z\s]+$/.test(name); // hanya huruf dan spasi
-const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email); // sederhana: ada @ dan .
-const isValidPassword = (password) =>
-  password.length >= 12 && /[^a-zA-Z0-9]/.test(password); // minimal 6 dan ada simbol
-
-
   const handleAddAccount = async () => {
-  if (!name.trim() || !email.trim() || !newPassword.trim()) {
-    return alert('Lengkapi semua data');
-  }
-
-  if (!isValidName(name)) {
-    return alert('Nama hanya boleh berisi huruf dan spasi');
-  }
-
-  if (!isValidEmail(email)) {
-    return alert('Email tidak valid');
-  }
-
-  if (!isValidPassword(newPassword)) {
-    return alert('Password minimal 6 karakter dan harus mengandung simbol');
-  }
+    if (!name.trim() || !email.trim() || !newPassword.trim()) {
+      return alert('Lengkapi semua data');
+    }
 
     try {
       const res = await fetch(`${baseURL}/api/users/register`, {
@@ -103,17 +85,17 @@ const isValidPassword = (password) =>
 
   const handleEditAccount = async () => {
   if (!name || !email || !assignedRole) return alert('Lengkapi semua data');
+  
+  const editingUser = users.find(user => user.id === editingUserId);
+  const adminCount = users.filter(u => u.role === 'admin').length;
 
-  if (!isValidName(name)) {
-    return alert('Nama hanya boleh berisi huruf dan spasi');
-  }
-
-  if (!isValidEmail(email)) {
-    return alert('Email tidak valid');
-  }
-
-  if (newPassword && !isValidPassword(newPassword)) {
-    return alert('Password baru minimal 6 karakter dan harus mengandung simbol');
+  if (
+    editingUser?.role === 'admin' &&
+    assignedRole !== 'admin' &&
+    adminCount <= 1
+  ) {
+    alert('Tidak dapat mengubah role admin terakhir.');
+    return;
   }
 
   try {

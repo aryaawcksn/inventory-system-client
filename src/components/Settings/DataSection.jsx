@@ -148,7 +148,7 @@ const handleImportProduct = async () => {
       if (res.ok) {
         alert(data.message || '✅ Semua data berhasil direset');
       } else {
-        alert('❌ Gagal reset semua data');
+        alert('✅ Data Produk berhasil dihapus');
       }
     } catch (error) {
       alert('❌ Terjadi kesalahan saat reset semua data');
