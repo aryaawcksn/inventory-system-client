@@ -34,18 +34,25 @@ const handleExportProduk = async () => {
   }
 };
 
-const handleImportProduct = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+const handleImportProduct = async () => {
+  if (!file) return alert('📁 Pilih file JSON terlebih dahulu');
 
   try {
     const text = await file.text();
     const products = JSON.parse(text);
 
+    if (!Array.isArray(products)) {
+      alert('❌ Format file tidak valid. Harus berupa array produk.');
+      return;
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+
     const res = await fetch(`${baseURL}/api/products/import-json`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-user': JSON.stringify(user),
       },
       body: JSON.stringify(products),
     });
@@ -53,16 +60,17 @@ const handleImportProduct = async (e) => {
     const data = await res.json();
 
     if (res.ok) {
-      alert(data.message || 'Import produk berhasil!');
-      fetchProducts(); // ⏮ Refresh produk setelah import
+      alert(data.message || '✅ Import produk berhasil!');
+      setFile(null);
     } else {
-      alert(data.message || 'Gagal import produk.');
+      alert(data.message || '❌ Gagal import produk.');
     }
   } catch (err) {
     console.error('❌ Gagal membaca file JSON:', err);
-    alert('File JSON tidak valid atau gagal diproses.');
+    alert('❌ File JSON tidak valid atau gagal diproses.');
   }
 };
+
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -150,7 +158,7 @@ const handleImportProduct = async (e) => {
 
   return (
     <div className="bg-white shadow rounded-lg p-6 space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Backup & Restore</h3>
+      <h3 className="text-lg font-semibold text-gray-900">Backup</h3>
 
       <div className="space-y-4">
         {/* EXPORT */}
@@ -162,19 +170,20 @@ const handleImportProduct = async (e) => {
         </button>
         <button
             onClick={handleExport}
-            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
           >
-            Import Data Penjualan (JSON)
+            Export Data Penjualan (JSON)
           </button>
 
         {/* IMPORT */}
+        <h3 className="text-lg font-semibold text-gray-900">Restore</h3>
         <div className="space-y-2">
           <input
-  type="file"
-  accept=".json"
-  onChange={handleFileChange}
-  className="w-full text-sm text-gray-700"
-/>
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="w-full text-sm text-gray-700"
+            />
           <button
             onClick={handleImportProduct}
             className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
@@ -188,7 +197,7 @@ const handleImportProduct = async (e) => {
             Import Data Penjualan (JSON)
           </button>
         </div>
-
+        <h3 className="text-lg font-semibold text-gray-900">Reset</h3>
         {/* RESET */}
         <button
           onClick={handleResetAll}

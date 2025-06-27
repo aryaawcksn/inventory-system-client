@@ -28,6 +28,7 @@ const InventorySalesSystem = () => {
   const [userRole, setUserRole] = useState('');
 
   // ✅ Tambahkan tab yang diizinkan
+  
   const allowedTabs = {
     admin: ['dashboard', 'products', 'sales', 'reports', 'settings', 'activity'],
     gudang: ['products'],
