@@ -100,12 +100,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
       <div className="bg-white rounded-xl shadow-lg">
         <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Riwayat Penjualan</h3>
-          <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Download className="w-4 h-4" />
-            <span>Export</span>
-          </button>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50">

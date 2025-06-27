@@ -9,7 +9,8 @@ import AddProductModal from '../components/AddProductModal';
 import SaleFormModal from '../components/SaleFormModal';
 import Settings from '../components/Settings/Settings';
 import AccessDenied from '../components/AccessDenied';
-import ActivityLog from '../components/Activitylog'; // ✅ Import activity log
+import ActivityLog from '../components/Activitylog';
+
 
 const baseURL = import.meta.env.VITE_API_URL;
 
@@ -26,6 +27,7 @@ const InventorySalesSystem = () => {
   const [sales, setSales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState('');
+  const [authLoading, setAuthLoading] = useState(true);
 
   // ✅ Tambahkan tab yang diizinkan
   
@@ -60,13 +62,15 @@ const InventorySalesSystem = () => {
   }, []);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) {
-      navigate('/');
-    } else {
-      setUserRole(user.role);
-    }
-  }, [navigate]);
+  const user = JSON.parse(localStorage.getItem('user'));
+  if (!user) {
+    navigate('/');
+  } else {
+    setUserRole(user.role);
+  }
+  setAuthLoading(false); // ✅ auth check selesai
+}, [navigate]);
+
 
   useEffect(() => {
     setActiveTab(currentTab);
@@ -143,6 +147,14 @@ useEffect(() => {
       .finally(() => setIsLoading(false));
   }
 }, [currentTab]);
+
+if (authLoading) {
+  return (
+    <div className="flex items-center justify-center h-screen text-gray-500">
+      Mohon tunggu, sedang memuat data...
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-gray-50">
