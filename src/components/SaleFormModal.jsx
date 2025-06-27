@@ -3,11 +3,14 @@ import Select from 'react-select';
 
 const baseURL = import.meta.env.VITE_API_URL;
 
-const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) => {
-  const [products, setProducts] = useState(parentProducts || []);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+const SaleFormModal = ({ setShowSaleForm, onSubmit }) => {
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -19,22 +22,20 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
 
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!parentProducts || parentProducts.length === 0) {
-        setLoadingProducts(true);
-        try {
-          const res = await fetch(`${baseURL}/api/products`);
-          const data = await res.json();
-          setProducts(data.products || []);
-        } catch (err) {
-          console.error('❌ Gagal mengambil produk:', err);
-        } finally {
-          setLoadingProducts(false);
-        }
+      setLoadingProducts(true);
+      try {
+        const res = await fetch(`${baseURL}/api/products`);
+        const data = await res.json();
+        setProducts(data.products || []);
+      } catch (err) {
+        console.error('❌ Gagal mengambil produk:', err);
+      } finally {
+        setLoadingProducts(false);
       }
     };
 
     fetchProducts();
-  }, [parentProducts]);
+  }, []);
 
   const productOptions = products.map(p => ({
     value: p._id,
@@ -49,7 +50,11 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
       setSelectedProduct(product);
       const price = product?.price || 0;
       const qty = parseInt(form.qty) || 1;
-      setForm(prev => ({ ...prev, total: price * qty, productId: selectedProductId }));
+      setForm(prev => ({
+        ...prev,
+        total: price * qty,
+        productId: selectedProductId
+      }));
     }
   }, [selectedProductId, form.qty, products]);
 
@@ -65,19 +70,21 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
 
     if (!selectedProductId || !form.qty) {
-      alert('Mohon lengkapi semua field');
+      setErrorMessage('Mohon lengkapi semua field.');
       return;
     }
 
     if (!selectedProduct) {
-      alert('Pilih produk terlebih dahulu.');
+      setErrorMessage('Pilih produk terlebih dahulu.');
       return;
     }
 
     if (form.qty > selectedProduct.stock) {
-      alert(`Stok produk tidak mencukupi. Stok tersedia hanya ${selectedProduct.stock} unit.`);
+      setErrorMessage(`Stok produk tidak mencukupi. Stok tersedia hanya ${selectedProduct.stock} unit.`);
       return;
     }
 
@@ -89,6 +96,8 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
       total: form.total,
       status: form.status
     };
+
+    setSubmitting(true);
 
     try {
       const res = await fetch(`${baseURL}/api/sales`, {
@@ -102,17 +111,16 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
       const data = await res.json();
 
       if (res.ok) {
-        alert('✅ Transaksi berhasil disimpan');
+        setSuccessMessage('✅ Transaksi berhasil disimpan.');
         onSubmit();
         setShowSaleForm(false);
 
-        // ✅ Catat log aktivitas
         const user = JSON.parse(localStorage.getItem('user'));
         await fetch(`${baseURL}/api/activity`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-user': localStorage.getItem('user') // ✅ harus dikirim
+            'x-user': localStorage.getItem('user')
           },
           body: JSON.stringify({
             userId: user.id,
@@ -122,11 +130,13 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
           })
         });
       } else {
-        alert('❌ Gagal menyimpan transaksi: ' + data.message);
+        setErrorMessage(data.message || '❌ Gagal menyimpan transaksi.');
       }
     } catch (err) {
-      alert('❌ Terjadi kesalahan saat menyimpan transaksi');
       console.error(err);
+      setErrorMessage('❌ Terjadi kesalahan saat menyimpan transaksi.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -147,6 +157,9 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
           </p>
         </div>
 
+        {errorMessage && <p className="text-sm text-red-600 mb-2">{errorMessage}</p>}
+        {successMessage && <p className="text-sm text-green-600 mb-2">{successMessage}</p>}
+
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="date"
@@ -156,7 +169,7 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
             className="w-full border p-2 rounded"
           />
 
-          <div className="mb-4">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Produk</label>
             {loadingProducts ? (
               <p className="text-gray-500 text-sm">Memuat produk...</p>
@@ -170,6 +183,7 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
               />
             )}
           </div>
+
           <input
             type="number"
             name="qty"
@@ -185,7 +199,7 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
             </p>
           )}
 
-          <div className="mb-4">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <Select
               options={statusOptions}
@@ -200,7 +214,7 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
             Total: Rp{form.total.toLocaleString('id-ID')}
           </div>
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-between items-center pt-2">
             <button
               type="button"
               onClick={() => setShowSaleForm(false)}
@@ -210,9 +224,12 @@ const SaleFormModal = ({ setShowSaleForm, products: parentProducts, onSubmit }) 
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded"
+              disabled={submitting}
+              className={`px-4 py-2 rounded text-white ${
+                submitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              Simpan
+              {submitting ? 'Menyimpan...' : 'Simpan'}
             </button>
           </div>
         </form>
