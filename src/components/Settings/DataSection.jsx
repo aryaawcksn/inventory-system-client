@@ -20,10 +20,12 @@ const DataSection = () => {
   reader.onload = async (e) => {
     try {
       const jsonData = JSON.parse(e.target.result);
+
       const res = await fetch(`${baseURL}/api/sales/import-json`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-user': JSON.stringify(JSON.parse(localStorage.getItem('user'))),
         },
         body: JSON.stringify(jsonData),
       });
@@ -31,15 +33,15 @@ const DataSection = () => {
       const data = await res.json();
       if (res.ok) {
         alert(`✅ ${data.message}`);
+        setFile(null);
       } else {
         alert('❌ Gagal import: ' + data.message);
       }
     } catch (err) {
-      alert('❌ Format file tidak valid atau error saat import');
+      alert('❌ Format JSON tidak valid');
       console.error(err);
     }
   };
-
   reader.readAsText(file);
 };
 
@@ -106,11 +108,11 @@ const DataSection = () => {
         {/* IMPORT */}
         <div className="space-y-2">
           <input
-            type="file"
-            accept=".json"
-            onChange={handleFileChange}
-            className="w-full text-sm text-gray-700"
-          />
+  type="file"
+  accept=".json"
+  onChange={handleFileChange}
+  className="w-full text-sm text-gray-700"
+/>
           <button
             onClick={handleImport}
             className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full"
