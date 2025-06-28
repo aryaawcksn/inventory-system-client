@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Edit, Trash2, Eye, X, User, Mail, Shield, Clock  } from 'lucide-react';
+import { Edit, Trash2, Eye, X, User, Mail, Shield, Clock, Loader } from 'lucide-react';
 const baseURL = import.meta.env.VITE_API_URL;
 
 
@@ -14,6 +14,10 @@ const AccountSection = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
+
 
   useEffect(() => {
     fetch(`${baseURL}/api/users`)
@@ -57,35 +61,40 @@ const fetchUsers = async () => {
   };
 
   const handleAddAccount = async () => {
-    if (!name.trim() || !email.trim() || !newPassword.trim()) {
-      return alert('Lengkapi semua data');
-    }
+  if (!name.trim() || !email.trim() || !newPassword.trim()) {
+    return alert('Lengkapi semua data');
+  }
 
-    try {
-      const res = await fetch(`${baseURL}/api/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password: newPassword, role: assignedRole })
-      });
+  setSubmitting(true); // mulai proses
 
-      if (res.ok) {
-        showMessage('Akun berhasil ditambahkan');
-        await logActivity(`Menambahkan akun baru: ${name} (${email}) dengan role ${assignedRole}`);
-        resetForm();
-        const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
-        setUsers(updated.users);
-      } else {
-        const err = await res.json();
-        alert(err.message || 'Email pengguna telah digunakan');
-      }
-    } catch (error) {
-      console.error('Gagal menambahkan akun:', error);
+  try {
+    const res = await fetch(`${baseURL}/api/users/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password: newPassword, role: assignedRole })
+    });
+
+    if (res.ok) {
+      showMessage('Akun berhasil ditambahkan');
+      await logActivity(`Menambahkan akun baru: ${name} (${email}) dengan role ${assignedRole}`);
+      resetForm();
+      const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
+      setUsers(updated.users);
+    } else {
+      const err = await res.json();
+      alert(err.message || 'Email pengguna telah digunakan');
     }
-  };
+  } catch (error) {
+    console.error('Gagal menambahkan akun:', error);
+  } finally {
+    setSubmitting(false); // selesai proses
+  }
+};
+
 
   const handleEditAccount = async () => {
   if (!name || !email || !assignedRole) return alert('Lengkapi semua data');
-  
+
   const editingUser = users.find(user => user.id === editingUserId);
   const adminCount = users.filter(u => u.role === 'admin').length;
 
@@ -98,6 +107,8 @@ const fetchUsers = async () => {
     return;
   }
 
+  setEditing(true); // mulai proses edit
+
   try {
     const oldUser = users.find(u => u.id === editingUserId);
     const res = await fetch(`${baseURL}/api/users/${editingUserId}`, {
@@ -109,7 +120,7 @@ const fetchUsers = async () => {
     if (res.ok) {
       await logActivity(`Mengedit akun: ${name} (${email}), role: ${oldUser?.role} ➜ ${assignedRole}`);
       showMessage('Akun berhasil diperbarui');
-      resetForm(); // clear state
+      resetForm();
       const updated = await fetch(`${baseURL}/api/users`).then(r => r.json());
       setUsers(updated.users);
     } else {
@@ -118,18 +129,19 @@ const fetchUsers = async () => {
     }
   } catch (err) {
     console.error('Gagal edit akun:', err);
+  } finally {
+    setEditing(false); // selesai proses
   }
 };
 
+
   const handleDeleteAccount = async (userId) => {
-  const confirmed = window.confirm('Apakah Anda yakin ingin menghapus akun ini?');
-  if (!confirmed) return;
 
   const deletedUser = users.find(user => user.id === userId);
 
   if (deletedUser?.id === currentUser?.id) {
-  alert('Tidak dapat menghapus akun Anda sendiri.');
-  return;
+    alert('Tidak dapat menghapus akun Anda sendiri.');
+    return;
   }
 
   const adminCount = users.filter(u => u.role === 'admin').length;
@@ -139,8 +151,8 @@ const fetchUsers = async () => {
     return;
   }
 
-
   try {
+    setDeletingId(userId); // ⬅️ set ID user yang sedang dihapus
     await fetch(`${baseURL}/api/users/${userId}`, {
       method: 'DELETE'
     });
@@ -149,8 +161,11 @@ const fetchUsers = async () => {
     await logActivity(`Menghapus akun: ${deletedUser?.name} (${deletedUser?.email})`);
   } catch (error) {
     console.error('Gagal menghapus akun:', error);
+  } finally {
+    setDeletingId(null); // ⬅️ reset setelah selesai
   }
 };
+
 
   const logActivity = async (action) => {
   if (!currentUser) return;
@@ -228,32 +243,28 @@ const fetchUsers = async () => {
 
         <div className="flex space-x-4">
           <button
-          onClick={handleAddAccount}
-          className={`px-4 py-2 rounded flex items-center space-x-2 ${
-            editingUserId
-              ? 'bg-gray-200 text-gray-00 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-          disabled={editingUserId !== null}
-        >
-          {editingUserId ? (
-            <>
-              <span>Tambahkan Akun</span>
-            </>
-          ) : (
-            <span>Tambahkan Akun</span>
-          )}
-        </button>
-
+  onClick={handleAddAccount}
+  className={`px-4 py-2 rounded flex items-center space-x-2 ${
+    editingUserId || submitting
+      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+      : 'bg-blue-600 text-white hover:bg-blue-700'
+  }`}
+  disabled={editingUserId !== null || submitting}
+>
+  <span>{submitting ? 'Menyimpan...' : 'Tambahkan Akun'}</span>
+</button>
           <button
-            onClick={handleEditAccount}
-            className={`${
-              editingUserId ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'
-            } text-white px-4 py-2 rounded`}
-            disabled={!editingUserId}
-          >
-            Edit Akun
-          </button>
+  onClick={handleEditAccount}
+  className={`${
+    editingUserId && !editing
+      ? 'bg-green-600 hover:bg-green-700'
+      : 'bg-gray-400 cursor-not-allowed'
+  } text-white px-4 py-2 rounded`}
+  disabled={!editingUserId || editing}
+>
+  {editing ? 'Menyimpan...' : 'Edit Akun'}
+</button>
+
         </div>
         {editingUserId && (
   <>
@@ -408,11 +419,16 @@ const fetchUsers = async () => {
                 <Edit className="w-4 h-4" />
               </button>
               <button
-                onClick={() => handleDeleteAccount(user.id)}
-                className="text-red-600 hover:text-red-900"
-              >
+              onClick={() => handleDeleteAccount(user.id)}
+              className="text-red-600 hover:text-red-900"
+              disabled={deletingId === user.id}
+            >
+              {deletingId === user.id ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
                 <Trash2 className="w-4 h-4" />
-              </button>
+              )}
+            </button>
             </div>
           </td>
         </tr>

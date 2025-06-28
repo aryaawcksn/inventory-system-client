@@ -10,6 +10,18 @@ html, body {
   font-family: 'Inter', sans-serif;
 }
 
+@keyframes progressBar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-progress {
+  animation-name: progressBar;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+
 @font-face {
   font-family: 'Inter';
   src: url('/fonts/Inter/Inter-Regular.woff2') format('woff2'),

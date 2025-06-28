@@ -1,7 +1,14 @@
 // src/components/ProductManagement.jsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Eye, Edit, Trash2, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Plus, Search, Eye, Edit, Trash2, ArrowDownAZ, ArrowUpAZ, Clock, XCircle, CheckCircle, Loader
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
 import AddProductModal from './AddProductModal';
+import DeletionToast from './DeletionToast';
+import { motion } from 'framer-motion';
+ // opsional, tapi dipakai
 
 const baseURL = import.meta.env.VITE_API_URL;
 
@@ -35,6 +42,10 @@ const ProductManagement = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalMode, setModalMode] = useState('add');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [deletingQueue, setDeletingQueue] = useState([]);
+  const deletingQueueRef = useRef([]);
+  const [deleteTimer, setDeleteTimer] = useState(null);
+
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -54,19 +65,18 @@ const ProductManagement = () => {
     fetchProducts();
   }, []);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(amount);
-  };
 
   const sortedFilteredProducts = useMemo(() => {
     let filtered = products;
 
     if (searchTerm.trim()) {
-      filtered = filtered.filter(p =>
+      filtered = filtered.filter((p) =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -94,47 +104,92 @@ const ProductManagement = () => {
 
   const toggleSort = (key) => {
     if (sortBy === key) {
-      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortBy(key);
       setSortOrder('asc');
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirm = window.confirm('Apakah Anda yakin ingin menghapus produk ini?');
-    if (!confirm) return;
+  const handleDelete = (id, name) => {
+  const controller = new AbortController();
+  const queueItem = { id, name, controller };
 
-    const user = JSON.parse(localStorage.getItem('user'));
+  // Tambah ke queue state dan ref
+  setDeletingQueue((prev) => {
+    const newQueue = [...prev, queueItem];
+    deletingQueueRef.current = newQueue;
+    return newQueue;
+  });
 
-    try {
-      const res = await fetch(`${baseURL}/api/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user': JSON.stringify(user),
-        },
-      });
+  if (deleteTimer) clearTimeout(deleteTimer);
 
-      const data = await res.json();
+  toast.custom((t) => (
+    <DeletionToast
+      count={deletingQueueRef.current.length}
+      onCancel={() => {
+        // Tandai bahwa semua dibatalkan
+        deletingQueueRef.current.forEach((item) => item.controller.abort());
+        setDeletingQueue([]);
+        deletingQueueRef.current = [];
 
-      if (res.ok) {
-        alert(data.message || 'Produk berhasil dihapus!');
-        fetchProducts();
-      } else {
-        alert(data.message || 'Gagal menghapus produk.');
+        toast.dismiss(t.id);
+        clearTimeout(deleteTimer); // Penting: jangan lanjut ke penghapusan
+      }}
+    />
+  ), {
+    id: 'delete-toast',
+    position: 'top-right',
+    duration: Infinity,
+  });
+
+  const newTimer = setTimeout(async () => {
+    let anyDeleted = false;
+
+    for (const item of deletingQueueRef.current) {
+      if (!item.controller.signal.aborted) {
+        try {
+          const res = await fetch(`${baseURL}/api/products/${item.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user': JSON.stringify(JSON.parse(localStorage.getItem('user'))),
+            },
+            signal: item.controller.signal,
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            toast.success(`Produk "${item.name}" dihapus.`, { duration: 1500 });
+            anyDeleted = true;
+          } else {
+            toast.error(data.message || 'Gagal menghapus produk.');
+          }
+        } catch (err) {
+          if (!item.controller.signal.aborted) {
+            toast.error('Terjadi kesalahan saat menghapus.');
+          }
+        }
       }
-    } catch (error) {
-      console.error('Gagal hapus produk:', error);
-      alert('Terjadi kesalahan saat menghapus produk.');
     }
-  };
+
+    // Hanya fetch ulang kalau ada produk yang benar-benar terhapus
+    if (anyDeleted) fetchProducts();
+
+    setDeletingQueue([]);
+    deletingQueueRef.current = [];
+    toast.dismiss('delete-toast');
+  }, 5000);
+
+  setDeleteTimer(newTimer);
+};
 
   return (
     <div className="space-y-6">
+      {/* Header & Tombol Tambah */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manajemen Produk</h1>
-        <button 
+        <button
           onClick={() => {
             setSelectedProduct(null);
             setModalMode('add');
@@ -147,6 +202,7 @@ const ProductManagement = () => {
         </button>
       </div>
 
+      {/* Filter & Sorting */}
       <div className="bg-white rounded-xl shadow-lg">
         <div className="p-6 border-b space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -164,30 +220,31 @@ const ProductManagement = () => {
               {sortBy === 'sku' && sortOrder === 'asc' ? <ArrowDownAZ /> : <ArrowUpAZ />}
               <span>SKU</span>
             </button>
-            <button onClick={() => toggleSort('stock')} className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+            <button onClick={() => toggleSort('stock')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
               <span>Stok</span>
             </button>
-            <button onClick={() => toggleSort('price')} className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+            <button onClick={() => toggleSort('price')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
               <span>Harga</span>
             </button>
           </div>
         </div>
 
+        {/* Tabel Produk */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produk</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                {['Produk', 'Stok', 'Harga', 'Status', 'Aksi'].map((header) => (
+                  <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {header}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading
                 ? [...Array(6)].map((_, i) => <ProductSkeleton key={i} />)
-                : sortedFilteredProducts.map(product => (
+                : sortedFilteredProducts.map((product) => (
                   <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -213,8 +270,8 @@ const ProductManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
+                        product.status === 'active'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {product.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
@@ -222,28 +279,40 @@ const ProductManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900" onClick={() => {
-                          setSelectedProduct(product);
-                          setModalMode('view');
-                          setShowAddProduct(true);
-                        }}>
+                        <button
+                          className="text-blue-600 hover:text-blue-900"
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setModalMode('view');
+                            setShowAddProduct(true);
+                          }}
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="text-green-600 hover:text-green-900" onClick={() => {
-                          setSelectedProduct(product);
-                          setModalMode('edit');
-                          setShowAddProduct(true);
-                        }}>
+                        <button
+                          className="text-green-600 hover:text-green-900"
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setModalMode('edit');
+                            setShowAddProduct(true);
+                          }}
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(product._id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <button
+                      onClick={() => handleDelete(product._id, product.name)}
+                      disabled={deletingQueue.some(item => item.id === product._id)}
+                    >
+                      {deletingQueue.some(item => item.id === product._id) ? (
+                        <Loader className="w-4 h-4 text-blue-500 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 text-red-600 hover:text-red-800" />
+                      )}
+                    </button>
                       </div>
                     </td>
                   </tr>
-                ))
-              }
+                ))}
               {!loading && sortedFilteredProducts.length === 0 && (
                 <tr>
                   <td colSpan="5" className="px-6 py-6 text-center text-gray-400">
