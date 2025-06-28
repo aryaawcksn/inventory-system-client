@@ -25,7 +25,6 @@ const Login = () => {
     const data = await res.json();
 
     if (res.ok) {
-      setMessage('Login berhasil!');
 
       // Simpan ke localStorage
       localStorage.setItem('user', JSON.stringify(data.user));

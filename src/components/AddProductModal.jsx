@@ -206,6 +206,7 @@ const AddProductModal = ({ setShowAddProduct, fetchProducts, selectedProduct, mo
     </div>
   </div>
 );
+
 };
 
 export default AddProductModal;

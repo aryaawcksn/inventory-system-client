@@ -116,7 +116,12 @@ const handleImportProduct = async () => {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`✅ ${data.message}`);
+        if (data.failed > 0) {
+          alert(`⚠️ ${data.message}\n\nDetail kesalahan:\n` +
+            data.errors.map(e => `- Index ${e.index}: ${e.message}`).join('\n'));
+        } else {
+          alert(`✅ ${data.message}`);
+        }
         setFile(null);
       } else {
         alert('❌ Gagal import: ' + data.message);
