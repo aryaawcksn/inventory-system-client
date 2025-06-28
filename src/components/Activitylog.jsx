@@ -26,6 +26,7 @@ const ActivityLog = () => {
   }, []);
 
   return (
+    
     <div className="bg-white shadow rounded p-6">
       <h2 className="text-xl font-semibold mb-4">Log Aktivitas</h2>
 

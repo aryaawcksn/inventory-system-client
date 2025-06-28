@@ -6,12 +6,31 @@ import {
   BarChart3,
   TrendingUp,
   TrendingDown,
+  ArrowUpAZ,
+  ArrowDownAZ,
+  CalendarClock
 } from 'lucide-react';
 import StatCard from './StatCard';
 import SaleSkeleton from './SaleSkeleton';
 
 const SalesManagement = ({ sales, setShowSaleForm }) => {
   const [loading, setLoading] = useState(true);
+  const [sortByQtyDesc, setSortByQtyDesc] = useState(true);
+  const [timeFilter, setTimeFilter] = useState('all');
+
+  const timeFilters = ['all', 'today', 'week', 'month'];
+  const timeLabels = {
+    all: 'Semua Waktu',
+    today: 'Hari Ini',
+    week: 'Minggu Ini',
+    month: 'Bulan Ini',
+  };
+
+  const toggleTimeFilter = () => {
+    const currentIndex = timeFilters.indexOf(timeFilter);
+    const nextIndex = (currentIndex + 1) % timeFilters.length;
+    setTimeFilter(timeFilters[nextIndex]);
+  };
 
   const toDateStr = (date) => date.toISOString().split('T')[0];
 
@@ -21,12 +40,6 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
         const saleDate = toDateStr(new Date(sale.date));
         return saleDate >= toDateStr(startDate) && saleDate <= toDateStr(endDate);
       })
-      .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
-  };
-
-  const getSalesByDate = (dateStr) => {
-    return sales
-      .filter((sale) => toDateStr(new Date(sale.date)) === dateStr)
       .reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   };
 
@@ -44,13 +57,10 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
       year: 'numeric',
     });
 
-  // === Trend Mingguan ===
   const today = new Date();
-
   const endThisWeek = new Date(today);
   const startThisWeek = new Date(today);
   startThisWeek.setDate(startThisWeek.getDate() - 6);
-
   const endLastWeek = new Date(startThisWeek);
   endLastWeek.setDate(endLastWeek.getDate() - 1);
   const startLastWeek = new Date(endLastWeek);
@@ -71,13 +81,36 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
   const trendIcon = trendValue >= 0 ? TrendingUp : TrendingDown;
 
   const totalSalesValue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
-
   const todayStr = toDateStr(today);
-  const todaySales = sales.filter(
-    (sale) => toDateStr(new Date(sale.date)) === todayStr
-  ).length;
-
+  const todaySales = sales.filter((sale) => toDateStr(new Date(sale.date)) === todayStr).length;
   const avgTransaction = totalSalesValue / (sales.length || 1);
+
+  const filterSalesByTime = () => {
+    const now = new Date();
+    return sales.filter((sale) => {
+      const date = new Date(sale.date);
+      if (timeFilter === 'today') {
+        return toDateStr(date) === toDateStr(now);
+      }
+      if (timeFilter === 'week') {
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - 6);
+        return date >= startOfWeek && date <= now;
+      }
+      if (timeFilter === 'month') {
+        return (
+          date.getMonth() === now.getMonth() &&
+          date.getFullYear() === now.getFullYear()
+        );
+      }
+      return true;
+    });
+  };
+
+  const filteredSales = filterSalesByTime();
+  const sortedSales = [...filteredSales].sort((a, b) =>
+    sortByQtyDesc ? Number(b.qty) - Number(a.qty) : Number(a.qty) - Number(b.qty)
+  );
 
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 500);
@@ -123,11 +156,31 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
           loading={loading}
         />
       </div>
-
+      
       <div className="bg-white rounded-xl shadow-lg">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Riwayat Penjualan</h3>
+        <div className="p-6 border-b flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <h3 className="text-lg font-semibold text-gray-900">Riwayat Penjualan</h3>
+
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={toggleTimeFilter}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+            >
+              <CalendarClock className="w-4 h-4" />
+              <span>{timeLabels[timeFilter]}</span>
+            </button>
+            <button
+              onClick={() => setSortByQtyDesc((prev) => !prev)}
+              className="flex items-center space-x-2 text-sm px-3 py-1 border rounded-lg hover:bg-gray-50"
+            >
+              {sortByQtyDesc ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
+              <span>Sortir Paling Diminati</span>
+            </button>
+          </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50">
@@ -143,7 +196,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
               {loading ? (
                 [...Array(5)].map((_, i) => <SaleSkeleton key={i} />)
               ) : (
-                sales.map((sale) => (
+                sortedSales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">{formatDate(sale.date)}</td>
                     <td className="px-6 py-4">{sale.items}</td>
@@ -163,7 +216,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
                   </tr>
                 ))
               )}
-              {!loading && sales.length === 0 && (
+              {!loading && sortedSales.length === 0 && (
                 <tr>
                   <td colSpan="5" className="px-6 py-6 text-center text-gray-400">
                     Belum ada data penjualan
