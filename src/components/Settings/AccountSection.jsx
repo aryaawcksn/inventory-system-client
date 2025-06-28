@@ -17,7 +17,7 @@ const AccountSection = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState(false);
-
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
 
   useEffect(() => {
     fetch(`${baseURL}/api/users`)
@@ -136,6 +136,8 @@ const fetchUsers = async () => {
 
 
   const handleDeleteAccount = async (userId) => {
+    const confirmed = window.confirm('Apakah Anda yakin ingin menghapus akun ini?');
+    if (!confirmed) return;
 
   const deletedUser = users.find(user => user.id === userId);
 
