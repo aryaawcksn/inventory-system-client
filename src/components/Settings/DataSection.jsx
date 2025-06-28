@@ -135,26 +135,31 @@ const handleImportProduct = async () => {
 };
 
   const handleReset = async () => {
-    const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data penjualan? Tindakan ini tidak dapat dibatalkan.');
-    if (!confirmed) return;
+  const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data penjualan? Tindakan ini tidak dapat dibatalkan.');
+  if (!confirmed) return;
 
-    try {
-      const res = await fetch(`${baseURL}/api/sales/reset`, {
-        method: 'DELETE',
-      });
+  const user = JSON.parse(localStorage.getItem('user')); // Ambil user dari localStorage
 
-      const data = await res.json();
-      if (res.ok) {
-        alert('✅ Semua data penjualan berhasil dihapus');
-      } else {
-        alert('❌ Gagal reset: ' + data.message);
+  try {
+    const res = await fetch(`${baseURL}/api/sales/reset`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user': JSON.stringify(user) // Kirim user sebagai header
       }
-    } catch (error) {
-      alert('❌ Terjadi kesalahan saat reset');
-      console.error(error);
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert('✅ Semua data penjualan berhasil dihapus');
+    } else {
+      alert('❌ Gagal reset: ' + data.message);
     }
-  };
-  
+  } catch (error) {
+    alert('❌ Terjadi kesalahan saat reset');
+    console.error(error);
+  }
+};
 
   const handleResetAll = async () => {
     const confirmed = window.confirm('⚠️ Yakin ingin mereset semua data produk? Tindakan ini tidak dapat dibatalkan.');
