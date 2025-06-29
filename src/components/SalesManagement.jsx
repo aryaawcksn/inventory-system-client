@@ -11,7 +11,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
   const [sortByQtyDesc, setSortByQtyDesc] = useState(true);
   const [timeFilter, setTimeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage =8;
 
   const timeFilters = ['all', 'today', 'week', 'month'];
   const timeLabels = {
