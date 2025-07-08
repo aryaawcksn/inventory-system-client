@@ -125,61 +125,65 @@ const ProductManagement = () => {
   if (deleteTimer) clearTimeout(deleteTimer);
 
   toast.custom((t) => (
-    <DeletionToast
-      count={deletingQueueRef.current.length}
-      onCancel={() => {
-        // Tandai bahwa semua dibatalkan
-        deletingQueueRef.current.forEach((item) => item.controller.abort());
-        setDeletingQueue([]);
-        deletingQueueRef.current = [];
+  <DeletionToast
+    count={deletingQueueRef.current.length}
+    visible={t.visible} // ini akan true/false sesuai lifecycle dari toast
+    onCancel={() => {
+      deletingQueueRef.current.forEach((item) => item.controller.abort());
+      setDeletingQueue([]);
+      deletingQueueRef.current = [];
 
-        toast.dismiss(t.id);
-        clearTimeout(deleteTimer); // Penting: jangan lanjut ke penghapusan
-      }}
-    />
-  ), {
-    id: 'delete-toast',
-    position: 'top-right',
-    duration: Infinity,
-  });
+      // Jangan langsung dismiss di sini
+      // toast.dismiss(t.id); ← pindahkan ke dalam komponen!
+      clearTimeout(deleteTimer);
+    }}
+  />
+), {
+  id: 'delete-toast',
+  position: 'top-right',
+  duration: Infinity,
+});
+
 
   const newTimer = setTimeout(async () => {
-    let anyDeleted = false;
+  const deletePromises = deletingQueueRef.current.map(async (item) => {
+    if (!item.controller.signal.aborted) {
+      try {
+        const res = await fetch(`${baseURL}/api/products/${item.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user': JSON.stringify(JSON.parse(localStorage.getItem('user'))),
+          },
+          signal: item.controller.signal,
+        });
 
-    for (const item of deletingQueueRef.current) {
-      if (!item.controller.signal.aborted) {
-        try {
-          const res = await fetch(`${baseURL}/api/products/${item.id}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-user': JSON.stringify(JSON.parse(localStorage.getItem('user'))),
-            },
-            signal: item.controller.signal,
-          });
-
-          const data = await res.json();
-          if (res.ok) {
-            toast.success(`Produk "${item.name}" dihapus.`, { duration: 1500 });
-            anyDeleted = true;
-          } else {
-            toast.error(data.message || 'Gagal menghapus produk.');
-          }
-        } catch (err) {
-          if (!item.controller.signal.aborted) {
-            toast.error('Terjadi kesalahan saat menghapus.');
-          }
+        const data = await res.json();
+        if (res.ok) {
+          toast.success(`Produk "${item.name}" dihapus.`); // muncul serentak
+          return true;
+        } else {
+          toast.error(data.message || 'Gagal menghapus produk.');
+        }
+      } catch (err) {
+        if (!item.controller.signal.aborted) {
+          toast.error('Terjadi kesalahan saat menghapus.');
         }
       }
     }
+    return false;
+  });
 
-    // Hanya fetch ulang kalau ada produk yang benar-benar terhapus
-    if (anyDeleted) fetchProducts();
+  const results = await Promise.all(deletePromises);
+  const anyDeleted = results.includes(true);
 
-    setDeletingQueue([]);
-    deletingQueueRef.current = [];
-    toast.dismiss('delete-toast');
-  }, 5000);
+  if (anyDeleted) fetchProducts();
+
+  setDeletingQueue([]);
+  deletingQueueRef.current = [];
+  toast.dismiss('delete-toast');
+}, 5000);
+
 
   setDeleteTimer(newTimer);
 };
