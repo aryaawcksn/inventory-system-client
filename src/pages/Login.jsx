@@ -28,7 +28,7 @@ const Login = () => {
   setMessage('');
 
   if (!captchaToken) {
-    setMessage('Silakan verifikasi captcha terlebih dahulu');
+    setMessage('Captcha belum terverifikasi');
     setShakeCaptcha(true);
     setTimeout(() => setShakeCaptcha(false), 500);
     return;
@@ -46,6 +46,7 @@ const Login = () => {
     const data = await res.json();
 
     if (res.ok) {
+      localStorage.setItem('token', data.token); 
       localStorage.setItem('user', JSON.stringify(data.user));
       navigate('/dashboard');
     } else {
