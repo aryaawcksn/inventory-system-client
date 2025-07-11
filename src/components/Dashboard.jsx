@@ -23,11 +23,14 @@ const Dashboard = ({ products, sales }) => {
   const lowStockItems = products.filter((p) => p.stock < 10).length;
   const totalSalesValue = sales.reduce((sum, sale) => sum + sale.total, 0);
 
-  const todayStr = new Date().toLocaleDateString('id-ID');
-  const todaySales = sales.filter(
-    (sale) =>
-      new Date(sale.date).toLocaleDateString('id-ID') === todayStr
-  ).length;
+  // Hitung penjualan hari ini
+const isSameDay = (d1, d2) =>
+  d1.getFullYear() === d2.getFullYear() &&
+  d1.getMonth() === d2.getMonth() &&
+  d1.getDate() === d2.getDate();
+
+const today = new Date();
+const todaySales = sales.filter((sale) => isSameDay(new Date(sale.date), today)).length;
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('id-ID', {
