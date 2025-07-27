@@ -11,7 +11,6 @@ import Settings from '../components/Settings/Settings';
 import AccessDenied from '../components/AccessDenied';
 import ActivityLog from '../components/Activitylog';
 
-
 const baseURL = import.meta.env.VITE_API_URL;
 
 const InventorySalesSystem = () => {
@@ -29,9 +28,8 @@ const InventorySalesSystem = () => {
   const [userRole, setUserRole] = useState('');
   const [authLoading, setAuthLoading] = useState(true);
   const [authDone, setAuthDone] = useState(false); 
+  const [longLoading, setLongLoading] = useState(false); // NEW: cek loading lama
 
-  // ✅ Tambahkan tab yang diizinkan
-  
   const allowedTabs = {
     admin: ['dashboard', 'products', 'sales', 'reports', 'settings', 'activity'],
     gudang: ['products'],
@@ -62,25 +60,34 @@ const InventorySalesSystem = () => {
     fetchData();
   }, []);
 
-useEffect(() => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  if (!user) {
-    navigate('/');
-  } else {
-    setUserRole(user.role);
-    setAuthDone(true); // ✅ role didapat
-  }
-}, [navigate]);
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      navigate('/');
+    } else {
+      setUserRole(user.role);
+      setAuthDone(true);
+    }
+  }, [navigate]);
 
-useEffect(() => {
-  if (authDone && !isLoading) {
-    const timer = setTimeout(() => {
-      setAuthLoading(false);
-    }, 500); // delay setelah data siap dan role diketahui
+  useEffect(() => {
+    if (authDone && !isLoading) {
+      const timer = setTimeout(() => {
+        setAuthLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [authDone, isLoading]);
 
-    return () => clearTimeout(timer);
-  }
-}, [authDone, isLoading]);
+  // NEW: deteksi loading > 10 detik
+  useEffect(() => {
+    if (authLoading) {
+      const timer = setTimeout(() => setLongLoading(true), 10000);
+      return () => clearTimeout(timer);
+    } else {
+      setLongLoading(false);
+    }
+  }, [authLoading]);
 
   useEffect(() => {
     setActiveTab(currentTab);
@@ -111,64 +118,71 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    if (currentTab === 'sales') {
-      fetchSales();
+    if (currentTab === 'sales') fetchSales();
+  }, [currentTab]);
+
+  useEffect(() => {
+    if (currentTab === 'reports') {
+      setIsLoading(true);
+      Promise.all([
+        fetch(`${baseURL}/api/products`),
+        fetch(`${baseURL}/api/sales`)
+      ])
+        .then(async ([resProducts, resSales]) => {
+          const dataProducts = await resProducts.json();
+          const dataSales = await resSales.json();
+          setProducts(dataProducts.products || []);
+          setSales(dataSales.sales || []);
+        })
+        .catch((err) => console.error('Gagal mengambil data untuk reports:', err))
+        .finally(() => setIsLoading(false));
     }
   }, [currentTab]);
 
   useEffect(() => {
-  if (currentTab === 'reports') {
-    setIsLoading(true);
-    Promise.all([
-      fetch(`${baseURL}/api/products`),
-      fetch(`${baseURL}/api/sales`)
-    ])
-      .then(async ([resProducts, resSales]) => {
-        const dataProducts = await resProducts.json();
-        const dataSales = await resSales.json();
+    if (currentTab === 'dashboard') {
+      setIsLoading(true);
+      Promise.all([
+        fetch(`${baseURL}/api/products`),
+        fetch(`${baseURL}/api/sales`)
+      ])
+        .then(async ([resProducts, resSales]) => {
+          const dataProducts = await resProducts.json();
+          const dataSales = await resSales.json();
+          setProducts(dataProducts.products || []);
+          setSales(dataSales.sales || []);
+        })
+        .catch((err) => console.error('Gagal mengambil data untuk dashboard:', err))
+        .finally(() => setIsLoading(false));
+    }
+  }, [currentTab]);
 
-        setProducts(dataProducts.products || []);
-        setSales(dataSales.sales || []);
-      })
-      .catch((err) => {
-        console.error('Gagal mengambil data untuk reports:', err);
-      })
-      .finally(() => setIsLoading(false));
-  }
-}, [currentTab]);
+  // === LOADING SCREEN DENGAN FADE IN / OUT ===
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100 transition-opacity duration-500">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
 
-useEffect(() => {
-  if (currentTab === 'dashboard') {
-    setIsLoading(true);
-    Promise.all([
-      fetch(`${baseURL}/api/products`),
-      fetch(`${baseURL}/api/sales`)
-    ])
-      .then(async ([resProducts, resSales]) => {
-        const dataProducts = await resProducts.json();
-        const dataSales = await resSales.json();
-
-        setProducts(dataProducts.products || []);
-        setSales(dataSales.sales || []);
-      })
-      .catch((err) => {
-        console.error('Gagal mengambil data untuk dashboard:', err);
-      })
-      .finally(() => setIsLoading(false));
-  }
-}, [currentTab]);
-
-if (authLoading) {
-  return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-        <p className="text-gray-600 text-sm">Memuat Data...</p>
+          <div
+            className={`transition-opacity duration-500 ${
+              longLoading ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {longLoading ? (
+              <div className="text-center text-gray-600 text-sm space-y-1">
+                <p>Waking Up Server...</p>
+                <p>This may take a while...</p>
+                <p>Some Data May Not Shown...</p>
+              </div>
+            ) : (
+              <p className="text-gray-600 text-sm">Memuat Data...</p>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
-
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -195,15 +209,14 @@ if (authLoading) {
               />
             )}
             {activeTab === 'reports' && (
-            <Reports products={products} sales={sales} isLoading={isLoading} />
-        )}
+              <Reports products={products} sales={sales} isLoading={isLoading} />
+            )}
             {activeTab === 'settings' && <Settings />}
-            {activeTab === 'activity' && <ActivityLog />} {/* ✅ Tampilkan activity log */}
+            {activeTab === 'activity' && <ActivityLog />}
           </>
         )}
       </div>
 
-      {/* === Modals === */}
       {showAddProduct && (
         <AddProductModal
           setShowAddProduct={setShowAddProduct}

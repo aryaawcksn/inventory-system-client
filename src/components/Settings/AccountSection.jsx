@@ -90,8 +90,6 @@ const fetchUsers = async () => {
     setSubmitting(false); // selesai proses
   }
 };
-
-
   const handleEditAccount = async () => {
   if (!name || !email || !assignedRole) return alert('Lengkapi semua data');
 
@@ -133,8 +131,6 @@ const fetchUsers = async () => {
     setEditing(false); // selesai proses
   }
 };
-
-
   const handleDeleteAccount = async (userId) => {
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus akun ini?');
     if (!confirmed) return;
