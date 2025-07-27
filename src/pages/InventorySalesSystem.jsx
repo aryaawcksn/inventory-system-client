@@ -27,8 +27,10 @@ const InventorySalesSystem = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState('');
   const [authLoading, setAuthLoading] = useState(true);
-  const [authDone, setAuthDone] = useState(false); 
-  const [longLoading, setLongLoading] = useState(false); // NEW: cek loading lama
+  const [authDone, setAuthDone] = useState(false);
+
+  const [longLoading, setLongLoading] = useState(false); 
+  const [messages, setMessages] = useState([]); // NEW: untuk animasi text per baris
 
   const allowedTabs = {
     admin: ['dashboard', 'products', 'sales', 'reports', 'settings', 'activity'],
@@ -79,15 +81,32 @@ const InventorySalesSystem = () => {
     }
   }, [authDone, isLoading]);
 
-  // NEW: deteksi loading > 10 detik
+  // Deteksi loading lama
   useEffect(() => {
     if (authLoading) {
-      const timer = setTimeout(() => setLongLoading(true), 10000);
+      const timer = setTimeout(() => setLongLoading(true), 1000);
       return () => clearTimeout(timer);
     } else {
       setLongLoading(false);
+      setMessages([]); // reset messages saat selesai
     }
   }, [authLoading]);
+
+  // Animasi muncul per baris
+  useEffect(() => {
+    if (longLoading) {
+      const msgs = [
+        'Waking Up Server...',
+        'This may take a while...',
+        'Some Data May Not Shown...',
+      ];
+      msgs.forEach((msg, index) => {
+        setTimeout(() => {
+          setMessages((prev) => [...prev, msg]);
+        }, index * 2000); // delay 700ms antar baris
+      });
+    }
+  }, [longLoading]);
 
   useEffect(() => {
     setActiveTab(currentTab);
@@ -157,28 +176,29 @@ const InventorySalesSystem = () => {
     }
   }, [currentTab]);
 
-  // === LOADING SCREEN DENGAN FADE IN / OUT ===
+  // === LOADING SCREEN ===
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100 transition-opacity duration-500">
+      <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-
-          <div
-            className={`transition-opacity duration-500 ${
-              longLoading ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {longLoading ? (
-              <div className="text-center text-gray-600 text-sm space-y-1">
-                <p>Waking Up Server...</p>
-                <p>This may take a while...</p>
-                <p>Some Data May Not Shown...</p>
-              </div>
-            ) : (
-              <p className="text-gray-600 text-sm">Memuat Data...</p>
-            )}
-          </div>
+          {!longLoading ? (
+            <p className="text-gray-600 text-sm transition-opacity duration-500 opacity-100">
+              Memuat Data...
+            </p>
+          ) : (
+            <div className="text-center text-gray-600 text-sm space-y-1">
+              {messages.map((msg, idx) => (
+                <p
+                  key={idx}
+                  className="opacity-0 animate-fade-in"
+                  style={{ animationDelay: `${idx * 0.2}s` }}
+                >
+                  {msg}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
