@@ -1,7 +1,9 @@
-import React from 'react';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
-import { Calendar } from 'lucide-react';
+import React, { useState } from "react";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import { Calendar } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   LineChart,
   Line,
@@ -9,10 +11,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
-} from 'recharts';
+  ResponsiveContainer,
+} from "recharts";
 
 const Reports = ({ products, sales, isLoading }) => {
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -28,74 +33,121 @@ const Reports = ({ products, sales, isLoading }) => {
     );
   }
 
+  // 📌 Filter sales berdasarkan rentang datepicker
+  const filteredSales = sales.filter((sale) => {
+    const saleDate = new Date(sale.date);
+    if (startDate && saleDate < startDate) return false;
+    if (endDate && saleDate > endDate) return false;
+    return true;
+  });
+
   // 🔢 Ringkasan inventory
   const totalProducts = products.length;
-  const totalStock = products.reduce((sum, product) => sum + (product.stock || 0), 0);
-  const lowStockItems = products.filter(product => product.stock < 10).length;
+  const totalStock = products.reduce(
+    (sum, product) => sum + (product.stock || 0),
+    0
+  );
+  const lowStockItems = products.filter((product) => product.stock < 10).length;
 
   // 🔢 Ringkasan penjualan
-  const totalSalesValue = sales.reduce((sum, sale) => {
+  const totalSalesValue = filteredSales.reduce((sum, sale) => {
     const total = Number(sale.total);
     return sum + (isNaN(total) ? 0 : total);
   }, 0);
 
-  const completedSales = sales.filter(s => s.status === 'completed').length;
-  const totalQtySold = sales.reduce((sum, sale) => {
+  const completedSales = filteredSales.filter(
+    (s) => s.status === "completed"
+  ).length;
+
+  const totalQtySold = filteredSales.reduce((sum, sale) => {
     const qty = Number(sale.qty);
     return sum + (isNaN(qty) ? 0 : qty);
   }, 0);
 
   // 📊 Data grafik penjualan per tanggal
   const salesByDateMap = {};
-
-  sales.forEach((sale) => {
-    const date = new Date(sale.date).toLocaleDateString('id-ID');
+  filteredSales.forEach((sale) => {
+    const date = new Date(sale.date).toLocaleDateString("id-ID");
     const total = Number(sale.total) || 0;
-
-    if (salesByDateMap[date]) {
-      salesByDateMap[date] += total;
-    } else {
-      salesByDateMap[date] = total;
-    }
+    salesByDateMap[date] = (salesByDateMap[date] || 0) + total;
   });
 
-  const salesChartData = Object.entries(salesByDateMap).map(([date, total]) => ({
-    date,
-    total,
-  }));
+  const salesChartData = Object.entries(salesByDateMap).map(
+    ([date, total]) => ({ date, total })
+  );
 
   // 💸 Format rupiah
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Laporan</h1>
-        <div className="flex items-center space-x-2 text-gray-600">
-          <Calendar className="w-5 h-5" />
-          <span>
-            {new Date().toLocaleDateString('id-ID', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </span>
+
+        {/* Filter & Info tanggal */}
+        <div className="flex items-center space-x-4">
+          {/* 📅 Date Range Picker */}
+          <DatePicker
+            selectsRange
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => {
+              setStartDate(update[0]);
+              setEndDate(update[1]);
+            }}
+            isClearable
+            placeholderText="Pilih rentang tanggal"
+            className="border rounded-lg px-3 py-2 text-sm sha"
+            dateFormat="dd/MM/yyyy"   // Format input manual
+            shouldCloseOnSelect={false} // Biar ga langsung nutup pas pilih tanggal pertama
+          />
+
+          {/* Info tanggal */}
+          <div className="flex items-center space-x-2 text-gray-600">
+            <Calendar className="w-5 h-5" />
+            {startDate && endDate ? (
+              <span>
+                {startDate.toLocaleDateString("id-ID")} -{" "}
+                {endDate.toLocaleDateString("id-ID")}
+              </span>
+            ) : (
+              <span>
+                {new Date().toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Ringkasan */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Ringkasan Penjualan */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ringkasan Penjualan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Ringkasan Penjualan{" "}
+            {startDate && endDate && (
+              <span className="text-sm text-gray-500">
+                ({startDate.toLocaleDateString("id-ID")} -{" "}
+                {endDate.toLocaleDateString("id-ID")})
+              </span>
+            )}
+          </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Penjualan</span>
-              <span className="font-semibold">{formatCurrency(totalSalesValue)}</span>
+              <span className="font-semibold">
+                {formatCurrency(totalSalesValue)}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Transaksi Selesai</span>
@@ -110,7 +162,9 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Ringkasan Inventory */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Inventory</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Status Inventory
+          </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Produk</span>
@@ -122,14 +176,18 @@ const Reports = ({ products, sales, isLoading }) => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Stok Menipis</span>
-              <span className="font-semibold text-red-600">{lowStockItems} produk</span>
+              <span className="font-semibold text-red-600">
+                {lowStockItems} produk
+              </span>
             </div>
           </div>
         </div>
 
         {/* Grafik Penjualan */}
         <div className="bg-white rounded-xl shadow-lg p-6 col-span-1 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performa Penjualan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Performa Penjualan
+          </h3>
           <div className="w-full h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -145,9 +203,9 @@ const Reports = ({ products, sales, isLoading }) => {
                 />
                 <Tooltip
                   formatter={(value) =>
-                    new Intl.NumberFormat('id-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
+                    new Intl.NumberFormat("id-ID", {
+                      style: "currency",
+                      currency: "IDR",
                       minimumFractionDigits: 0,
                     }).format(value)
                   }

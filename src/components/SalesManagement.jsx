@@ -111,9 +111,9 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3">Tanggal</th>
-                <th className="px-6 py-3">Produk</th>
-                <th className="px-6 py-3">Jumlah</th>
+                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Name</th>
+                <th className="px-6 py-3">Quantity</th>
                 <th className="px-6 py-3">Total</th>
                 <th className="px-6 py-3">Status</th>
               </tr>
@@ -154,7 +154,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
       {/* TABEL 2: Produk Paling Banyak Keluar */}
       <div className="bg-white rounded-xl shadow-lg">
         <div className="px-6 pt-6 pb-3 border-b flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Produk Paling Banyak Keluar</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Produk Terjual</h3>
           <button onClick={() => setSortByQtyDesc(p => !p)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2">
             {sortByQtyDesc ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />} <span>Jumlah</span>
           </button>
@@ -163,8 +163,8 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3">Produk</th>
-                <th className="px-6 py-3">Jumlah</th>
+                <th className="px-6 py-3">Name</th>
+                <th className="px-6 py-3">Quantity</th>
                 <th className="px-6 py-3">Total</th>
               </tr>
             </thead>
