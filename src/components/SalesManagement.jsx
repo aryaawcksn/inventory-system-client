@@ -12,9 +12,10 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
   const [loading, setLoading] = useState(true);
   const [sortByQtyDesc, setSortByQtyDesc] = useState(true);
   const [timeFilter, setTimeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' atau 'pending'
   const [currentPage, setCurrentPage] = useState(1);
   const [localSales, setLocalSales] = useState([]);
-  const [role, setRole] = useState(null); // 👈 simpan role user
+  const [role, setRole] = useState(null);
   const itemsPerPage = 8;
 
   const timeFilters = ['all', 'today', 'week', 'month'];
@@ -23,16 +24,16 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
   };
 
   useEffect(() => {
-  const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    try {
-      const parsed = JSON.parse(storedUser);
-      setRole(parsed.role); // ✅ ambil role dari user object
-    } catch (e) {
-      console.error("Failed to parse user from localStorage", e);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setRole(parsed.role);
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+      }
     }
-  }
-}, []);
+  }, []);
 
   const toggleTimeFilter = () => {
     const currentIndex = timeFilters.indexOf(timeFilter);
@@ -56,16 +57,22 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
     const now = new Date();
     return localSales.filter((sale) => {
       const date = new Date(sale.date);
-      if (timeFilter === 'today') return toDateStr(date) === toDateStr(now);
-      if (timeFilter === 'week') {
-        const start = new Date(now);
-        start.setDate(start.getDate() - 6);
-        return date >= start && date <= now;
-      }
-      if (timeFilter === 'month') {
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      }
-      return true;
+
+      // Filter waktu
+      const timeMatch =
+        timeFilter === 'today' ? toDateStr(date) === toDateStr(now)
+        : timeFilter === 'week' ? (() => {
+            const start = new Date();
+            start.setDate(now.getDate() - 6);
+            return date >= start && date <= now;
+          })()
+        : timeFilter === 'month' ? (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear())
+        : true;
+
+      // Filter status
+      const statusMatch = statusFilter === 'all' ? true : sale.status === 'pending';
+
+      return timeMatch && statusMatch;
     });
   };
 
@@ -92,33 +99,31 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
     sortByQtyDesc ? b.qty - a.qty : a.qty - b.qty
   );
 
-  // Konfirmasi penjualan → update ke backend
   const confirmSale = async (saleId) => {
-  const storedUser = localStorage.getItem("user");
-  const user = storedUser ? JSON.parse(storedUser) : null;
+    const storedUser = localStorage.getItem("user");
+    const user = storedUser ? JSON.parse(storedUser) : null;
 
-  try {
-    const res = await fetch(`${baseURL}/api/sales/${saleId}/status`, {
-      method: "PUT",
-      headers: { 
-        "Content-Type": "application/json",
-        "x-user": JSON.stringify(user) // ✅ kirim user ke backend
-      },
-      body: JSON.stringify({ status: "completed" }),
-    });
+    try {
+      const res = await fetch(`${baseURL}/api/sales/${saleId}/status`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user": JSON.stringify(user)
+        },
+        body: JSON.stringify({ status: "completed" }),
+      });
 
-    if (!res.ok) throw new Error("Gagal update status");
+      if (!res.ok) throw new Error("Gagal update status");
 
-    // update state lokal biar UI real-time
-    setLocalSales((prev) =>
-      prev.map((sale) =>
-        sale._id === saleId ? { ...sale, status: "completed" } : sale
-      )
-    );
-  } catch (err) {
-    console.error(err);
-  }
-};
+      setLocalSales((prev) =>
+        prev.map((sale) =>
+          sale._id === saleId ? { ...sale, status: "completed" } : sale
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     setLocalSales(sales);
@@ -128,7 +133,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [timeFilter]);
+  }, [timeFilter, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -152,12 +157,21 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
       <div className="bg-white rounded-xl shadow-lg">
         <div className="px-6 pt-6 pb-3 border-b flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Riwayat Penjualan</h3>
-          <button
-            onClick={toggleTimeFilter}
-            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
-          >
-            <CalendarClock className="w-4 h-4" /> <span>{timeLabels[timeFilter]}</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleTimeFilter}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+            >
+              <CalendarClock className="w-4 h-4" /> <span>{timeLabels[timeFilter]}</span>
+            </button>
+
+            <button
+              onClick={() => setStatusFilter(prev => prev === 'all' ? 'pending' : 'all')}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+            >
+              <span>{statusFilter === 'all' ? 'All Status' : 'Pending'}</span>
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -176,7 +190,6 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
                 [...Array(5)].map((_, i) => <SaleSkeleton key={i} />)
               ) : (
                 paginatedSales.map((sale, i) => {
-                  const globalIndex = (currentPage - 1) * itemsPerPage + i;
                   return (
                     <tr key={sale._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">{formatDate(sale.date)}</td>
@@ -195,22 +208,21 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-  {sale.status === "completed" ? (
-    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800">
-      <Check className="w-3 h-3" /> Selesai
-    </span>
-  ) : role === "admin" ? (   // ✅ hanya admin yang bisa
-    <button
-      onClick={() => confirmSale(sale._id)}
-      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-gray-800 text-white hover:bg-gray-700"
-    >
-      <Check className="w-3 h-3" /> Konfirmasi
-    </button>
-  ) : (
-    <span className="text-xs text-gray-500">Menunggu admin</span>  // user lain hanya lihat
-  )}
-</td>
-
+                        {sale.status === "completed" ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800">
+                            <Check className="w-3 h-3" /> Selesai
+                          </span>
+                        ) : role === "admin" ? (
+                          <button
+                            onClick={() => confirmSale(sale._id)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-gray-800 text-white hover:bg-gray-700"
+                          >
+                            <Check className="w-3 h-3" /> Konfirmasi
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-500">Menunggu admin</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -232,9 +244,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 border rounded ${
-                currentPage === i + 1 ? 'bg-gray-200 font-semibold' : ''
-              }`}
+              className={`px-3 py-1 border rounded ${currentPage === i + 1 ? 'bg-gray-200 font-semibold' : ''}`}
             >
               {i + 1}
             </button>
@@ -257,12 +267,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
             onClick={() => setSortByQtyDesc((p) => !p)}
             className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
           >
-            {sortByQtyDesc ? (
-              <ArrowDownAZ className="w-4 h-4" />
-            ) : (
-              <ArrowUpAZ className="w-4 h-4" />
-            )}{' '}
-            <span>Jumlah</span>
+            {sortByQtyDesc ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />} <span>Jumlah</span>
           </button>
         </div>
         <div className="overflow-x-auto">
@@ -282,9 +287,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4">{sale.items}</td>
                     <td className="px-6 py-4">{sale.qty}</td>
-                    <td className="px-6 py-4 font-medium">
-                      {formatCurrency(sale.total)}
-                    </td>
+                    <td className="px-6 py-4 font-medium">{formatCurrency(sale.total)}</td>
                   </tr>
                 ))
               )}
