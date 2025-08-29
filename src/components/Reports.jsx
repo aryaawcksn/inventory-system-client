@@ -114,6 +114,7 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Filter & Info tanggal */}
         <div className="flex items-center space-x-4">
+          <p>Ubah Tanggal :</p>
           <DatePicker
             selectsRange
             startDate={startDate}
