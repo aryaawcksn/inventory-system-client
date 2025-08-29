@@ -10,11 +10,9 @@ import {
   XCircle,
   TrendingDown,
   TrendingUp as TrendingUpIcon,
-  Plus,
   Slash,
 } from 'lucide-react';
 import StatCard from './StatCard';
-import { Button } from './ui/button';
 
 const Dashboard = ({ products, sales }) => {
   const [loading, setLoading] = useState(true);
@@ -56,19 +54,23 @@ const Dashboard = ({ products, sales }) => {
   const todaySales = getDailySales(today);
   const yesterdaySales = getDailySales(yesterday);
   const salesDiff = todaySales - yesterdaySales;
-  const salesTrendText = salesDiff === 0
-    ? 'Stabil'
-    : `${salesDiff > 0 ? '+' : '-'}${Math.abs(salesDiff)} dari kemarin`;
-  const salesTrendColor = salesDiff > 0 ? 'text-green-600' : salesDiff < 0 ? 'text-red-600' : 'text-gray-500';
+  const salesTrendText =
+    salesDiff === 0
+      ? 'Stabil'
+      : `${salesDiff > 0 ? '+' : '-'}${Math.abs(salesDiff)} dari kemarin`;
+  const salesTrendColor =
+    salesDiff > 0 ? 'text-green-600' : salesDiff < 0 ? 'text-red-600' : 'text-gray-500';
   const salesTrendIcon = salesDiff > 0 ? TrendingUpIcon : salesDiff < 0 ? TrendingDown : null;
 
   const todayRevenue = getDailyRevenue(today);
   const yesterdayRevenue = getDailyRevenue(yesterday);
   const revenueDiff = todayRevenue - yesterdayRevenue;
-  const revenueTrendText = revenueDiff === 0
-    ? 'Stabil'
-    : `${revenueDiff > 0 ? '+' : '-'}${formatCurrency(Math.abs(revenueDiff))} dari kemarin`;
-  const revenueTrendColor = revenueDiff > 0 ? 'text-green-600' : revenueDiff < 0 ? 'text-red-600' : 'text-gray-500';
+  const revenueTrendText =
+    revenueDiff === 0
+      ? 'Stabil'
+      : `${revenueDiff > 0 ? '+' : '-'}${formatCurrency(Math.abs(revenueDiff))} dari kemarin`;
+  const revenueTrendColor =
+    revenueDiff > 0 ? 'text-green-600' : revenueDiff < 0 ? 'text-red-600' : 'text-gray-500';
   const revenueTrendIcon = revenueDiff > 0 ? TrendingUpIcon : revenueDiff < 0 ? TrendingDown : null;
 
   const pendingSales = sales.filter((sale) => sale.status === 'pending').length;
@@ -84,6 +86,11 @@ const Dashboard = ({ products, sales }) => {
     );
     return new Date(latestSale.date) < oneMonthAgo;
   }).length;
+
+  // ✅ Sort sales by createdAt descending & ambil 4 terbaru
+  const latestSales = [...sales]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -101,28 +108,11 @@ const Dashboard = ({ products, sales }) => {
         </div>
       </div>
 
+      {/* Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Produk"
-          value={totalProducts}
-          icon={Package}
-          color="#3B82F6"
-          loading={loading}
-        />
-        <StatCard
-          title="Total Stok"
-          value={totalStock}
-          icon={TrendingUp}
-          color="#10B981"
-          loading={loading}
-        />
-        <StatCard
-          title="Stok Menipis"
-          value={lowStockItems}
-          icon={AlertTriangle}
-          color="#F59E0B"
-          loading={loading}
-        />
+        <StatCard title="Total Produk" value={totalProducts} icon={Package} color="#3B82F6" loading={loading} />
+        <StatCard title="Total Stok" value={totalStock} icon={TrendingUp} color="#10B981" loading={loading} />
+        <StatCard title="Stok Menipis" value={lowStockItems} icon={AlertTriangle} color="#F59E0B" loading={loading} />
         <StatCard
           title="Penjualan Hari Ini"
           value={todaySales}
@@ -181,30 +171,27 @@ const Dashboard = ({ products, sales }) => {
               Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
               ))
+            ) : products.filter((p) => p.stock < 10).length === 0 ? (
+              <div className="text-gray-500 text-sm">Tidak ada produk dengan stok rendah.</div>
             ) : (
-              products.filter((p) => p.stock < 10).length === 0 ? (
-                <div className="text-gray-500 text-sm">Tidak ada produk dengan stok rendah.</div>
-              ) : (
-                products
-                  .filter((p) => p.stock < 10)
-                  .map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">{product.name}</p>
-                        <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                      </div>
-                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium">
-                        {product.stock} tersisa
-                      </span>
+              products
+                .filter((p) => p.stock < 10)
+                .map((product) => (
+                  <div
+                    key={product._id}
+                    className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{product.name}</p>
+                      <p className="text-sm text-gray-600">SKU: {product.sku}</p>
                     </div>
-                  ))
-              )
+                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium">
+                      {product.stock} tersisa
+                    </span>
+                  </div>
+                ))
             )}
           </div>
-  
         </div>
 
         {/* Penjualan Terbaru */}
@@ -215,15 +202,17 @@ const Dashboard = ({ products, sales }) => {
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-20 bg-gray-200 rounded-lg animate-pulse" />
               ))
+            ) : latestSales.length === 0 ? (
+              <div className="text-gray-500 text-sm">Belum ada penjualan.</div>
             ) : (
-              sales.slice(0, 4).map((sale) => (
+              latestSales.map((sale) => (
                 <div
                   key={sale._id}
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div>
                     <p className="font-medium text-gray-900">{sale.items}</p>
-                    <p className="text-sm text-gray-600">{sale.customer}</p>
+                    <p className="text-sm text-gray-600">{sale.customer || 'Tanpa nama'}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">

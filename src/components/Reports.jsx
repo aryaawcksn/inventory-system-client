@@ -33,7 +33,7 @@ const Reports = ({ products, sales, isLoading }) => {
     );
   }
 
-  // 📌 Filter sales berdasarkan rentang datepicker
+  // Filter sales berdasarkan rentang datepicker
   const filteredSales = sales.filter((sale) => {
     const saleDate = new Date(sale.date);
     if (startDate && saleDate < startDate) return false;
@@ -41,48 +41,70 @@ const Reports = ({ products, sales, isLoading }) => {
     return true;
   });
 
-  // 🔢 Ringkasan inventory
+  // Ringkasan inventory
   const totalProducts = products.length;
-  const totalStock = products.reduce(
-    (sum, product) => sum + (product.stock || 0),
-    0
-  );
+  const totalStock = products.reduce((sum, product) => sum + (product.stock || 0), 0);
   const lowStockItems = products.filter((product) => product.stock < 10).length;
 
-  // 🔢 Ringkasan penjualan
-  const totalSalesValue = filteredSales.reduce((sum, sale) => {
-    const total = Number(sale.total);
-    return sum + (isNaN(total) ? 0 : total);
-  }, 0);
+  // Ringkasan penjualan
+  const totalSalesValue = filteredSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+  const completedSales = filteredSales.filter((s) => s.status === "completed").length;
+  const totalQtySold = filteredSales.reduce((sum, sale) => sum + (Number(sale.qty) || 0), 0);
 
-  const completedSales = filteredSales.filter(
-    (s) => s.status === "completed"
-  ).length;
-
-  const totalQtySold = filteredSales.reduce((sum, sale) => {
-    const qty = Number(sale.qty);
-    return sum + (isNaN(qty) ? 0 : qty);
-  }, 0);
-
-  // 📊 Data grafik penjualan per tanggal
+  // Data grafik penjualan per tanggal
   const salesByDateMap = {};
   filteredSales.forEach((sale) => {
     const date = new Date(sale.date).toLocaleDateString("id-ID");
-    const total = Number(sale.total) || 0;
-    salesByDateMap[date] = (salesByDateMap[date] || 0) + total;
+    salesByDateMap[date] = (salesByDateMap[date] || 0) + (Number(sale.total) || 0);
+  });
+  const salesChartData = Object.entries(salesByDateMap).map(([date, total]) => ({ date, total }));
+
+  // Top Produk Terlaris
+  const productSalesMap = {};
+  filteredSales.forEach((sale) => {
+    if (!sale.productId) return;
+    productSalesMap[sale.productId] = (productSalesMap[sale.productId] || 0) + (Number(sale.qty) || 0);
   });
 
-  const salesChartData = Object.entries(salesByDateMap).map(
-    ([date, total]) => ({ date, total })
-  );
+  const topProducts = Object.entries(productSalesMap)
+    .map(([productId, qty]) => {
+      const product = products.find((p) => p._id === productId);
+      return {
+        id: productId,
+        name: product ? product.name : "Produk Tidak Dikenal",
+        qty,
+      };
+    })
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
 
-  // 💸 Format rupiah
+  // Top Produk Paling Untung
+  const productProfitMap = {};
+  filteredSales.forEach((sale) => {
+    if (!sale.productId) return;
+    const product = products.find((p) => p._id === sale.productId);
+    if (!product) return;
+
+    const cost = Number(product.cost || 0); // harga modal
+    const totalProfit = (Number(sale.total) || 0) - cost * (Number(sale.qty) || 0);
+    productProfitMap[sale.productId] = (productProfitMap[sale.productId] || 0) + totalProfit;
+  });
+
+  const topProfitProducts = Object.entries(productProfitMap)
+    .map(([productId, profit]) => {
+      const product = products.find((p) => p._id === productId);
+      return {
+        id: productId,
+        name: product ? product.name : "Produk Tidak Dikenal",
+        profit,
+      };
+    })
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 5);
+
+  // Format rupiah
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
   return (
     <div className="space-y-6">
@@ -92,7 +114,6 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Filter & Info tanggal */}
         <div className="flex items-center space-x-4">
-          {/* 📅 Date Range Picker */}
           <DatePicker
             selectsRange
             startDate={startDate}
@@ -102,28 +123,17 @@ const Reports = ({ products, sales, isLoading }) => {
               setEndDate(update[1]);
             }}
             isClearable
-            placeholderText="Pilih rentang tanggal"
-            className="border rounded-lg px-3 py-2 text-sm sha"
-            dateFormat="dd/MM/yyyy"   // Format input manual
-            shouldCloseOnSelect={false} // Biar ga langsung nutup pas pilih tanggal pertama
+            placeholderText="dd/MM/yyyy - dd/MM/yyyy"
+            className="border rounded-lg px-3 py-2 text-sm"
+            dateFormat="dd/MM/yyyy"
+            shouldCloseOnSelect={false}
           />
-
-          {/* Info tanggal */}
           <div className="flex items-center space-x-2 text-gray-600">
             <Calendar className="w-5 h-5" />
             {startDate && endDate ? (
-              <span>
-                {startDate.toLocaleDateString("id-ID")} -{" "}
-                {endDate.toLocaleDateString("id-ID")}
-              </span>
+              <span>{startDate.toLocaleDateString("id-ID")} - {endDate.toLocaleDateString("id-ID")}</span>
             ) : (
-              <span>
-                {new Date().toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
+              <span>{new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
             )}
           </div>
         </div>
@@ -134,20 +144,16 @@ const Reports = ({ products, sales, isLoading }) => {
         {/* Ringkasan Penjualan */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Ringkasan Penjualan{" "}
-            {startDate && endDate && (
+            Ringkasan Penjualan {startDate && endDate && (
               <span className="text-sm text-gray-500">
-                ({startDate.toLocaleDateString("id-ID")} -{" "}
-                {endDate.toLocaleDateString("id-ID")})
+                ({startDate.toLocaleDateString("id-ID")} - {endDate.toLocaleDateString("id-ID")})
               </span>
             )}
           </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Penjualan</span>
-              <span className="font-semibold">
-                {formatCurrency(totalSalesValue)}
-              </span>
+              <span className="font-semibold">{formatCurrency(totalSalesValue)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Transaksi Selesai</span>
@@ -162,9 +168,7 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Ringkasan Inventory */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Status Inventory
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Inventory</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Produk</span>
@@ -176,48 +180,56 @@ const Reports = ({ products, sales, isLoading }) => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Stok Menipis</span>
-              <span className="font-semibold text-red-600">
-                {lowStockItems} produk
-              </span>
+              <span className="font-semibold text-red-600">{lowStockItems} produk</span>
             </div>
           </div>
         </div>
 
+        {/* Top Produk Terlaris */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Produk Paling Laris</h3>
+          {topProducts.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {topProducts.map((prod, idx) => (
+                <li key={prod.id} className="flex justify-between items-center py-2">
+                  <span>{idx + 1}. {prod.name}</span>
+                  <span className="font-semibold text-gray-700">{prod.qty} unit</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 text-sm">Belum ada data penjualan</p>
+          )}
+        </div>
+
+        {/* Top Produk Paling Untung */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Produk Paling Untung</h3>
+          {topProfitProducts.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {topProfitProducts.map((prod, idx) => (
+                <li key={prod.id} className="flex justify-between items-center py-2">
+                  <span>{idx + 1}. {prod.name}</span>
+                  <span className="font-semibold text-gray-700">{formatCurrency(prod.profit)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 text-sm">Belum ada data penjualan</p>
+          )}
+        </div>
+
         {/* Grafik Penjualan */}
         <div className="bg-white rounded-xl shadow-lg p-6 col-span-1 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Performa Penjualan
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performa Penjualan</h3>
           <div className="w-full h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={salesChartData}
-                margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
-              >
+              <LineChart data={salesChartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis
-                  width={90}
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(val) => `Rp${(val / 1000000).toFixed(1)}jt`}
-                />
-                <Tooltip
-                  formatter={(value) =>
-                    new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      minimumFractionDigits: 0,
-                    }).format(value)
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 6 }}
-                />
+                <YAxis width={90} tick={{ fontSize: 12 }} tickFormatter={(val) => `Rp${(val / 1000000).toFixed(1)}jt`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
