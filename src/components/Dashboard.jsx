@@ -212,7 +212,6 @@ const Dashboard = ({ products, sales }) => {
                 >
                   <div>
                     <p className="font-medium text-gray-900">{sale.items}</p>
-                    <p className="text-sm text-gray-600">{sale.customer || 'Tanpa nama'}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">
