@@ -187,7 +187,12 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Top Produk Terlaris */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Produk Paling Laris</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Produk Paling Laris {startDate && endDate && (
+              <span className="text-sm text-gray-500">
+                ({startDate.toLocaleDateString("id-ID")} - {endDate.toLocaleDateString("id-ID")})
+              </span>
+            )}</h3>
+          
           {topProducts.length > 0 ? (
             <ul className="divide-y divide-gray-200">
               {topProducts.map((prod, idx) => (
@@ -204,7 +209,11 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Top Produk Paling Untung */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Produk Paling Untung</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Produk Paling Untung {startDate && endDate && (
+              <span className="text-sm text-gray-500">
+                ({startDate.toLocaleDateString("id-ID")} - {endDate.toLocaleDateString("id-ID")})
+              </span>
+            )}</h3>
           {topProfitProducts.length > 0 ? (
             <ul className="divide-y divide-gray-200">
               {topProfitProducts.map((prod, idx) => (
@@ -221,7 +230,11 @@ const Reports = ({ products, sales, isLoading }) => {
 
         {/* Grafik Penjualan */}
         <div className="bg-white rounded-xl shadow-lg p-6 col-span-1 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performa Penjualan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performa Penjualan {startDate && endDate && (
+              <span className="text-sm text-gray-500">
+                ({startDate.toLocaleDateString("id-ID")} - {endDate.toLocaleDateString("id-ID")})
+              </span>
+            )}</h3>
           <div className="w-full h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={salesChartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>

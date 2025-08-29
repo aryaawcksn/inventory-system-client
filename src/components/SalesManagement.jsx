@@ -196,7 +196,7 @@ const SalesManagement = ({ sales, setShowSaleForm }) => {
                       </td>
                       <td className="px-6 py-4 text-center">
   {sale.status === "completed" ? (
-    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold  bg-green-100 text-green-800">
+    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800">
       <Check className="w-3 h-3" /> Selesai
     </span>
   ) : role === "admin" ? (   // ✅ hanya admin yang bisa
