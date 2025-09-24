@@ -73,6 +73,7 @@ const Login = () => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow relative">
       <h2 className="text-2xl font-bold mb-4">Login</h2>
+      <h3>email: superadmin | Pass: admin</h3>
 
       {message && (
         <p
